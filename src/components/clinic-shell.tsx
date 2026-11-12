@@ -1,92 +1,57 @@
-"use client";
-
+import Link from "next/link";
 import type { ReactNode } from "react";
-import { Button } from "@/components/motion/button";
-import {
-  AnimatedSidebar,
-  AnimatedSidebarContent,
-  AnimatedSidebarFooter,
-  AnimatedSidebarGroup,
-  AnimatedSidebarGroupContent,
-  AnimatedSidebarGroupLabel,
-  AnimatedSidebarHeader,
-  AnimatedSidebarInset,
-  AnimatedSidebarMenu,
-  AnimatedSidebarMenuButton,
-  AnimatedSidebarMenuItem,
-  AnimatedSidebarProvider,
-  AnimatedSidebarTrigger,
-} from "@/components/motion/animated-sidebar";
-import { AnimatedBadge } from "@/components/motion/animated-badge";
+import { Users, Plus } from "lucide-react";
 import { setLocale } from "@/app/actions";
-import type { Copy } from "@/lib/copy";
+import { clinicCopy } from "@/lib/clinic-copy";
 import type { Locale } from "@/lib/locale-shared";
-import type { PatientLink } from "@/lib/chart";
 
 export function ClinicShell({
   locale,
-  copy,
-  patients,
-  activeId,
-  chip,
   children,
 }: {
   locale: Locale;
-  copy: Copy;
-  patients: PatientLink[];
-  activeId?: string;
-  chip?: ReactNode;
   children: ReactNode;
 }) {
+  const c = clinicCopy(locale);
   return (
-    <AnimatedSidebarProvider
-      labels={{ label: copy.patients, toggle: copy.toggle, close: copy.close }}
-    >
-      <AnimatedSidebar ariaLabel={copy.patients}>
-        <AnimatedSidebarHeader>
-          <AnimatedBadge status="neutral">{copy.patients}</AnimatedBadge>
-        </AnimatedSidebarHeader>
-        <AnimatedSidebarContent>
-          <AnimatedSidebarGroup>
-            <AnimatedSidebarGroupLabel>{copy.patients}</AnimatedSidebarGroupLabel>
-            <AnimatedSidebarGroupContent>
-              <AnimatedSidebarMenu>
-                {patients.map((patient) => (
-                  <AnimatedSidebarMenuItem key={patient.id}>
-                    <AnimatedSidebarMenuButton
-                      href={`/patients/${patient.id}`}
-                      isActive={patient.id === activeId}
-                    >
-                      {patient.name}
-                    </AnimatedSidebarMenuButton>
-                  </AnimatedSidebarMenuItem>
-                ))}
-              </AnimatedSidebarMenu>
-            </AnimatedSidebarGroupContent>
-          </AnimatedSidebarGroup>
-        </AnimatedSidebarContent>
-        <AnimatedSidebarFooter>
+    <div className="clinic-app">
+      <a href="#main" className="skip-link">
+        {locale === "en" ? "Skip to content" : "跳至內容"}
+      </a>
+      <header className="app-header">
+        <Link href="/patients" className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            <Plus size={23} />
+          </span>
+          <span>
+            Clinic<span className="brand-caption">{c.workspace}</span>
+          </span>
+        </Link>
+        <nav aria-label={c.workspace}>
+          <Link href="/patients" className="nav-link">
+            <Users size={17} />
+            {c.patients}
+          </Link>
+        </nav>
+        <div className="language-switch" aria-label="Language">
           <form action={setLocale.bind(null, "zh-HK")}>
-            <Button type="submit" size="sm" variant={locale === "zh-HK" ? "primary" : "outline"}>
-              繁體中文
-            </Button>
+            <button
+              className={locale === "zh-HK" ? "selected" : ""}
+              lang="zh-HK"
+            >
+              繁中
+            </button>
           </form>
           <form action={setLocale.bind(null, "en")}>
-            <Button type="submit" size="sm" variant={locale === "en" ? "primary" : "outline"}>
-              English
-            </Button>
+            <button className={locale === "en" ? "selected" : ""} lang="en">
+              EN
+            </button>
           </form>
-        </AnimatedSidebarFooter>
-      </AnimatedSidebar>
-      <AnimatedSidebarInset>
-        <div className="flex flex-col gap-4 p-4">
-          <div className="flex items-center gap-3">
-            <AnimatedSidebarTrigger />
-            {chip}
-          </div>
-          {children}
         </div>
-      </AnimatedSidebarInset>
-    </AnimatedSidebarProvider>
+      </header>
+      <main id="main" className="workspace">
+        {children}
+      </main>
+    </div>
   );
 }

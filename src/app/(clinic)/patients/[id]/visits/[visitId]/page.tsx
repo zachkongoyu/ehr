@@ -1,13 +1,10 @@
-import { notFound } from "next/navigation";
-import { AnimatedBadge } from "@/components/motion/animated-badge";
+import { notFound, redirect } from "next/navigation";
 import { ClinicShell } from "@/components/clinic-shell";
+import { PatientHeader, ChartContext } from "@/components/chart-context";
 import { VisitFormCard } from "@/components/visit-form";
-import { listPatients, loadHistory, loadVisitForm } from "@/lib/chart";
-import { t } from "@/lib/copy";
+import { loadHistory, listMedications } from "@/lib/chart";
 import { getLocale } from "@/lib/locale";
-
 export const dynamic = "force-dynamic";
-
 export default async function VisitFormPage({
   params,
 }: {
@@ -16,22 +13,27 @@ export default async function VisitFormPage({
   const { id, visitId } = await params;
   if (!/^\d+$/.test(id) || !/^\d+$/.test(visitId)) notFound();
   const locale = await getLocale();
-  const copy = t(locale);
-  const [patients, history, form] = await Promise.all([
-    listPatients(locale),
+  const [patient, medications] = await Promise.all([
     loadHistory(id, locale),
-    loadVisitForm(id, visitId, locale),
+    listMedications(locale),
   ]);
-  if (!history || !form) notFound();
+  if (!patient) notFound();
+  const visit = patient.visits.find((item) => item.id === visitId);
+  if (!visit) notFound();
+  if (visit.status !== "in-progress")
+    redirect("/patients/" + id + "?visit=" + visitId);
   return (
-    <ClinicShell
-      locale={locale}
-      copy={copy}
-      patients={patients}
-      activeId={id}
-      chip={<AnimatedBadge status="info">{history.name}</AnimatedBadge>}
-    >
-      <VisitFormCard copy={copy} patientId={id} visitId={visitId} form={form} />
+    <ClinicShell locale={locale}>
+      <PatientHeader patient={patient} locale={locale} mode="consultation" />
+      <div className="consultation-context">
+        <ChartContext patient={patient} locale={locale} mode="consultation" />
+      </div>
+      <VisitFormCard
+        locale={locale}
+        patient={patient}
+        visit={visit}
+        medications={medications}
+      />
     </ClinicShell>
   );
 }

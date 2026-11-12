@@ -1,151 +1,111 @@
-"use client";
-
-import { useState } from "react";
-import { Button, ButtonLink } from "@/components/motion/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/motion/card";
-import { AnimatedBadge } from "@/components/motion/animated-badge";
-import { Timeline } from "@/components/motion/timeline";
-import { startVisit } from "@/app/actions";
+import Link from "next/link";
+import { CalendarDays, ArrowUpRight } from "lucide-react";
 import { ClinicShell } from "@/components/clinic-shell";
-import type { Copy } from "@/lib/copy";
+import { PatientHeader, ChartContext } from "@/components/chart-context";
+import { VisitRecord } from "@/components/visit-record";
+import { clinicCopy } from "@/lib/clinic-copy";
 import type { Locale } from "@/lib/locale-shared";
-import { intlLocale } from "@/lib/locale-shared";
-import type { PatientLink, VisitView } from "@/lib/chart";
+import type { PatientChart } from "@/lib/chart";
 
 export function HistoryScreen({
   locale,
-  copy,
-  patients,
   patient,
+  selectedId,
 }: {
   locale: Locale;
-  copy: Copy;
-  patients: PatientLink[];
-  patient: { id: string; name: string; visits: VisitView[] };
+  patient: PatientChart;
+  selectedId?: string;
 }) {
-  const [visitId, setVisitId] = useState(patient.visits[0]?.id ?? "");
+  const c = clinicCopy(locale);
   const selected =
-    patient.visits.find((visit) => visit.id === visitId) ?? patient.visits[0];
-
+    patient.visits.find((visit) => visit.id === selectedId) ??
+    patient.visits[0];
   return (
-    <ClinicShell
-      locale={locale}
-      copy={copy}
-      patients={patients}
-      activeId={patient.id}
-      chip={<AnimatedBadge status="info">{patient.name}</AnimatedBadge>}
-    >
-      {patient.visits.length === 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>{copy.history}</CardTitle>
-            <CardDescription>{copy.noVisits}</CardDescription>
-          </CardHeader>
-          <CardFooter>
-            <form action={startVisit.bind(null, patient.id)}>
-              <Button type="submit" size="sm">
-                {copy.newVisit}
-              </Button>
-            </form>
-          </CardFooter>
-        </Card>
-      ) : (
-        <>
-          <Timeline
-            aria-label={copy.history}
-            height={320}
-            value={selected?.id}
-            onValueChange={setVisitId}
-            events={patient.visits.map((visit) => ({
-              id: visit.id,
-              date: visit.iso,
-              title: visit.title,
-              meta: (
-                <AnimatedBadge status={visit.badge} size="sm">
-                  {visit.statusLabel}
-                </AnimatedBadge>
-              ),
-            }))}
-            formatDate={(date) =>
-              new Intl.DateTimeFormat(intlLocale(locale), {
-                timeZone: "Asia/Hong_Kong",
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              }).format(date)
-            }
-            formatYear={(date) =>
-              new Intl.DateTimeFormat(intlLocale(locale), {
-                timeZone: "Asia/Hong_Kong",
-                year: "numeric",
-              }).format(date)
-            }
-            labels={{
-              label: copy.history,
-              hint: locale === "zh-HK" ? "用左右方向鍵切換就診" : "Use the arrow keys to move between visits.",
-            }}
-          />
+    <ClinicShell locale={locale}>
+      <PatientHeader patient={patient} locale={locale} mode="overview" />
+      <div className="chart-layout">
+        <aside>
+          <ChartContext patient={patient} locale={locale} mode="overview" />
+        </aside>
+        <section className="panel history-panel">
+          <div className="panel-heading">
+            <h2>
+              <CalendarDays size={17} />
+              {c.visits}
+            </h2>
+            <span className="count">{patient.visits.length}</span>
+          </div>
           {selected ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>{selected.date}</CardTitle>
-                <CardDescription>{copy.visit}</CardDescription>
-                <CardAction>
-                  <AnimatedBadge status={selected.badge}>{selected.statusLabel}</AnimatedBadge>
-                </CardAction>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid gap-3 sm:grid-cols-2">
-                  <Fact label={copy.ended} value={selected.ended} />
-                  <Fact label={copy.doctor} value={selected.doctor} />
-                  <Fact label={copy.place} value={selected.place} />
-                  <div className="sm:col-span-2">
-                    <dt className="text-sm text-muted-foreground">{copy.answers}</dt>
-                    <dd className="mt-2 grid gap-2">
-                      {selected.answers.length === 0 ? (
-                        <span>{copy.noAnswers}</span>
-                      ) : (
-                        selected.answers.map((answer) => (
-                          <span key={answer.id}>
-                            {answer.question} {answer.answer}
-                          </span>
-                        ))
-                      )}
-                    </dd>
+            <div className="history-layout">
+              <nav className="visit-list" aria-label={c.visits}>
+                {patient.visits.map((visit) => (
+                  <Link
+                    key={visit.id}
+                    href={"/patients/" + patient.id + "?visit=" + visit.id}
+                    className={
+                      visit.id === selected.id
+                        ? "visit-row active"
+                        : "visit-row"
+                    }
+                    aria-current={visit.id === selected.id ? "true" : undefined}
+                  >
+                    <span className={"status-dot " + visit.status} />
+                    <div>
+                      <strong>{visit.note.complaint || c.consultation}</strong>
+                      <span>{visit.date}</span>
+                      <small>
+                        {visit.status === "in-progress"
+                          ? c.draft
+                          : visit.status === "finished"
+                            ? c.finished
+                            : visit.status === "cancelled"
+                              ? c.cancelled
+                              : c.planned}
+                      </small>
+                    </div>
+                  </Link>
+                ))}
+              </nav>
+              <article className="selected-visit">
+                <header className="record-header">
+                  <div>
+                    <span className="eyebrow">
+                      {selected.status === "finished"
+                        ? c.readOnly
+                        : c.consultation}
+                    </span>
+                    <h2>{selected.note.complaint || c.consultation}</h2>
+                    <p>
+                      {selected.date}
+                      {selected.provider_name
+                        ? " · " + selected.provider_name
+                        : ""}
+                    </p>
                   </div>
-                </dl>
-              </CardContent>
-              <CardFooter>
-                <ButtonLink href={`/patients/${patient.id}/visits/${selected.id}`} size="sm">
-                  {copy.record}
-                </ButtonLink>
-                <form action={startVisit.bind(null, patient.id)}>
-                  <Button type="submit" size="sm" variant="outline">
-                    {copy.newVisit}
-                  </Button>
-                </form>
-              </CardFooter>
-            </Card>
-          ) : null}
-        </>
-      )}
+                  {selected.status === "in-progress" && (
+                    <Link
+                      className="button secondary small"
+                      href={
+                        "/patients/" + patient.id + "/visits/" + selected.id
+                      }
+                    >
+                      {c.resume}
+                      <ArrowUpRight size={14} />
+                    </Link>
+                  )}
+                </header>
+                <VisitRecord visit={selected} locale={locale} />
+              </article>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <CalendarDays size={30} />
+              <h3>{c.noVisits}</h3>
+              <p>{c.directoryHelp}</p>
+            </div>
+          )}
+        </section>
+      </div>
     </ClinicShell>
-  );
-}
-
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd>{value}</dd>
-    </div>
   );
 }

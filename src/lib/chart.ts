@@ -1,289 +1,236 @@
-import { phrase, t, displayName, type Copy } from "@/lib/copy";
 import { getPool } from "@/lib/db";
-import type { EnableWhen } from "@/lib/enable-when";
+import { displayName, phrase, t } from "@/lib/copy";
 import { intlLocale, type Locale } from "@/lib/locale-shared";
+import type { Note, Prescription, Vital } from "@/lib/consultation";
 
-export type PatientLink = { id: string; name: string };
-
+export type Patient = {
+  id: string;
+  name: string;
+  chart_number: string;
+  name_text: string;
+  family_name: string;
+  given_name: string;
+  birth_date: string;
+  sex: string;
+  phone: string | null;
+  address: string | null;
+  identity_document_type: string | null;
+  identity_document_number: string | null;
+  ehr_number: string | null;
+  last_visit: string | null;
+  open_visit: string | null;
+};
+export type PatientLink = Patient;
 export type VisitView = {
   id: string;
-  iso: string;
-  title: string;
-  statusLabel: string;
-  badge: "neutral" | "info" | "success" | "danger";
+  status: string;
+  documentation_version: number;
+  started_at: string;
+  ended_at: string | null;
+  provider_name: string | null;
   date: string;
-  ended: string;
-  doctor: string;
-  place: string;
+  note: Note;
+  vitals: { code: Vital; value: number; unit: string }[];
+  diagnoses: { id: string; description: string }[];
+  prescriptions: (Prescription & {
+    id: string;
+    name: string;
+    status: string;
+  })[];
   answers: { id: string; question: string; answer: string }[];
 };
 
-export type FormOption = { code: string; label: string };
-
-export type FormItem = {
-  linkId: string;
-  prompt: string;
-  type: string;
-  required: boolean;
-  options: FormOption[];
-  enableWhen: EnableWhen[];
-  enableBehavior: "all" | "any" | null;
-};
-
-export type VisitForm = {
-  questionnaireId: string;
-  title: string;
-  items: FormItem[];
-  withheld: { code: string; reason: string }[];
-};
-
-type Sql = Record<string, unknown>;
-
-function str(value: unknown) {
-  if (value == null) return "";
-  if (value instanceof Date) return value.toISOString();
-  return String(value);
-}
-
-function formatWhen(value: string, locale: Locale, withTime: boolean) {
-  if (!value) return "";
-  const date = new Date(value.includes("T") || value.includes("+") ? value : `${value.slice(0, 10)}T12:00:00+08:00`);
-  if (Number.isNaN(date.getTime())) return value;
+export function formatWhen(value: string | null, locale: Locale) {
+  if (!value) return "—";
   return new Intl.DateTimeFormat(intlLocale(locale), {
     timeZone: "Asia/Hong_Kong",
-    year: "numeric",
-    month: "short",
     day: "numeric",
-    ...(withTime ? { hour: "numeric", minute: "2-digit" } : {}),
-  }).format(date);
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
 }
 
-function visitBadge(status: string): VisitView["badge"] {
-  if (status === "finished") return "success";
-  if (status === "in-progress") return "info";
-  if (status === "cancelled") return "danger";
-  return "neutral";
-}
+const patientSelect = `
+  select patient.id::text, patient.chart_number, patient.name_text, patient.family_name, patient.given_name,
+    patient.birth_date::text, patient.sex, patient.phone, patient.address,
+    patient.identity_document_type, patient.identity_document_number, patient.ehr_number,
+    (select max(started_at)::text from public.visit where patient_id=patient.id) as last_visit,
+    (select id::text from public.visit where patient_id=patient.id and status='in-progress' order by started_at desc limit 1) as open_visit
+  from public.patient`;
 
-function answerText(
+export async function listPatients(
   locale: Locale,
-  copy: Copy,
-  item: Sql,
-  options: Map<string, string>,
-) {
-  if (item.value_boolean === true) return copy.yes;
-  if (item.value_boolean === false) return copy.no;
-  if (item.value_coding) {
-    return options.get(String(item.value_coding)) ?? phrase(locale, String(item.value_coding));
-  }
-  if (item.value_string) return phrase(locale, String(item.value_string));
-  return copy.empty;
-}
-
-export async function listPatients(locale: Locale): Promise<PatientLink[]> {
-  const result = await getPool().query<Sql>(
-    `select id::text, name_text, family_name, given_name
-     from public.patient
-     order by chart_number`,
+  search = "",
+): Promise<Patient[]> {
+  const result = await getPool().query<Omit<Patient, "name">>(
+    patientSelect +
+      `
+    where ($1 = '' or concat_ws(' ',name_text,family_name,given_name,chart_number,phone) ilike $2)
+    order by chart_number limit 100`,
+    [search, "%" + search + "%"],
   );
-  return result.rows.map((row) => ({
-    id: str(row.id),
-    name: displayName(locale, {
-      name_text: str(row.name_text),
-      family_name: str(row.family_name),
-      given_name: str(row.given_name),
-    }),
-  }));
+  return result.rows.map((row) => ({ ...row, name: displayName(locale, row) }));
 }
 
 export async function loadHistory(patientId: string, locale: Locale) {
+  const db = getPool();
+  const result = await db.query<Omit<Patient, "name">>(
+    patientSelect + " where patient.id=$1",
+    [patientId],
+  );
+  const patient = result.rows[0];
+  if (!patient) return null;
+  const [
+    visits,
+    notes,
+    observations,
+    problems,
+    orders,
+    statements,
+    answers,
+    allergies,
+  ] = await Promise.all([
+    db.query<{
+      id: string;
+      status: string;
+      documentation_version: number;
+      started_at: string;
+      ended_at: string | null;
+      provider_name: string | null;
+    }>(
+      "select id::text,status,documentation_version,started_at::text,ended_at::text,provider_name from public.visit where patient_id=$1 order by started_at desc,id desc",
+      [patientId],
+    ),
+    db.query<Note & { visit_id: string; follow_up: string }>(
+      "select note.*,note.visit_id::text from public.visit_note note join public.visit on visit.id=note.visit_id where visit.patient_id=$1",
+      [patientId],
+    ),
+    db.query<{ visit_id: string; code: Vital; value: string; unit: string }>(
+      "select observation.visit_id::text,code,value::text,unit from public.visit_observation observation join public.visit on visit.id=observation.visit_id where visit.patient_id=$1",
+      [patientId],
+    ),
+    db.query<{
+      id: string;
+      visit_id: string | null;
+      description: string;
+      category: string;
+      clinical_status: string;
+    }>(
+      "select id::text,visit_id::text,description,category,clinical_status from public.problem where patient_id=$1 order by recorded_on desc,id desc",
+      [patientId],
+    ),
+    db.query<{
+      id: string;
+      visit_id: string | null;
+      medicationId: string;
+      name: string;
+      status: string;
+      dose: string;
+      route: string;
+      frequency: string;
+    }>(
+      `select orders.id::text,visit_id::text,medication_id::text as "medicationId",medication.name,status,coalesce(dose_text,'') as dose,coalesce(route_text,'') as route,coalesce(frequency_text,'') as frequency from public.medication_order orders join public.medication on medication.id=orders.medication_id where patient_id=$1 order by authored_on desc,orders.id desc`,
+      [patientId],
+    ),
+    db.query<{
+      id: string;
+      name: string;
+      dose_text: string | null;
+      frequency_text: string | null;
+      status: string;
+    }>(
+      "select statement.id::text,medication.name,dose_text,frequency_text,status from public.medication_statement statement join public.medication on medication.id=statement.medication_id where patient_id=$1 and status='active' order by statement.id",
+      [patientId],
+    ),
+    db.query<{
+      id: string;
+      visit_id: string;
+      prompt: string | null;
+      link_id: string;
+      value_boolean: boolean | null;
+      value_coding: string | null;
+      value_string: string | null;
+      display: string | null;
+    }>(
+      `select item.id::text,response.visit_id::text,question.prompt,item.link_id,item.value_boolean,item.value_coding,item.value_string,option.display
+      from public.questionnaire_response response join public.questionnaire_response_item item on item.response_id=response.id
+      left join public.questionnaire_item question on question.questionnaire_id=response.questionnaire_id and question.link_id=item.link_id
+      left join public.questionnaire_item_option option on option.item_id=question.id and option.code=item.value_coding
+      where response.patient_id=$1 order by response.authored_at desc,question.sequence`,
+      [patientId],
+    ),
+    db.query<{ id: string; substance: string; reaction: string }>(
+      "select id::text,substance,reaction from public.patient_allergy where patient_id=$1 order by id",
+      [patientId],
+    ),
+  ]);
   const copy = t(locale);
-  const patient = await getPool().query<Sql>(
-    `select id::text, name_text, family_name, given_name
-     from public.patient where id = $1`,
-    [patientId],
-  );
-  const row = patient.rows[0];
-  if (!row) return null;
-
-  const visits = await getPool().query<Sql>(
-    `select id::text, status, started_at::text, ended_at::text, provider_name, location_name
-     from public.visit
-     where patient_id = $1
-     order by started_at`,
-    [patientId],
-  );
-  const answers = await getPool().query<Sql>(
-    `select response.visit_id::text as visit_id,
-            item.id::text,
-            item.link_id,
-            item.value_boolean,
-            item.value_coding,
-            item.value_string,
-            question.prompt,
-            question.sequence
-     from public.questionnaire_response response
-     join public.questionnaire_response_item item on item.response_id = response.id
-     left join public.questionnaire_item question
-       on question.questionnaire_id = response.questionnaire_id
-      and question.link_id = item.link_id
-     where response.patient_id = $1
-     order by response.authored_at, question.sequence nulls last, item.id`,
-    [patientId],
-  );
-  const optionRows = await getPool().query<Sql>(
-    `select code, display from public.questionnaire_item_option`,
-  );
-  const options = new Map(
-    optionRows.rows.map((option) => [
-      str(option.code),
-      phrase(locale, str(option.display)),
-    ]),
-  );
-
-  const byVisit = new Map<string, VisitView["answers"]>();
-  for (const item of answers.rows) {
-    const visitId = str(item.visit_id);
-    const list = byVisit.get(visitId) ?? [];
-    list.push({
-      id: str(item.id),
-      question: phrase(locale, str(item.prompt || item.link_id)),
-      answer: answerText(locale, copy, item, options),
-    });
-    byVisit.set(visitId, list);
-  }
-
   return {
-    id: str(row.id),
-    name: displayName(locale, {
-      name_text: str(row.name_text),
-      family_name: str(row.family_name),
-      given_name: str(row.given_name),
-    }),
-    visits: visits.rows.map((visit) => {
-      const status = str(visit.status);
-      const started = str(visit.started_at);
-      const statusLabel =
-        status === "finished" ||
-        status === "in-progress" ||
-        status === "cancelled" ||
-        status === "planned"
-          ? copy[status]
-          : status;
+    ...patient,
+    name: displayName(locale, patient),
+    problems: problems.rows
+      .filter(
+        (row) =>
+          row.clinical_status === "active" &&
+          row.category === "problem-list-item",
+      )
+      .map((row) => ({ ...row, description: phrase(locale, row.description) })),
+    allergies: allergies.rows,
+    medications: statements.rows.map((row) => ({
+      ...row,
+      name: phrase(locale, row.name),
+    })),
+    activeOrders: orders.rows
+      .filter((row) => row.status === "active")
+      .map((row) => ({ ...row, name: phrase(locale, row.name) })),
+    visits: visits.rows.map((visit): VisitView => {
+      const note = notes.rows.find((row) => row.visit_id === visit.id);
       return {
-        id: str(visit.id),
-        iso: started,
-        title: `${formatWhen(started, locale, true)} · ${copy.visit}`,
-        statusLabel,
-        badge: visitBadge(status),
-        date: formatWhen(started, locale, true),
-        ended: formatWhen(str(visit.ended_at), locale, true) || copy.empty,
-        doctor: str(visit.provider_name) || copy.empty,
-        place: str(visit.location_name) || copy.empty,
-        answers: byVisit.get(str(visit.id)) ?? [],
-      } satisfies VisitView;
+        ...visit,
+        date: formatWhen(visit.started_at, locale),
+        note: {
+          complaint: note?.complaint ?? "",
+          history: note?.history ?? "",
+          examination: note?.examination ?? "",
+          assessment: note?.assessment ?? "",
+          plan: note?.plan ?? "",
+          followUp: note?.follow_up ?? "",
+        },
+        vitals: observations.rows
+          .filter((row) => row.visit_id === visit.id)
+          .map((row) => ({ ...row, value: Number(row.value) })),
+        diagnoses: problems.rows.filter(
+          (row) =>
+            row.visit_id === visit.id && row.category === "encounter-diagnosis",
+        ),
+        prescriptions: orders.rows
+          .filter((row) => row.visit_id === visit.id)
+          .map((row) => ({ ...row, name: phrase(locale, row.name) })),
+        answers: answers.rows
+          .filter((row) => row.visit_id === visit.id)
+          .map((row) => ({
+            id: row.id,
+            question: phrase(locale, row.prompt ?? row.link_id),
+            answer:
+              row.value_boolean == null
+                ? phrase(
+                    locale,
+                    row.display ?? row.value_string ?? row.value_coding ?? "—",
+                  )
+                : row.value_boolean
+                  ? copy.yes
+                  : copy.no,
+          })),
+      };
     }),
   };
 }
-
-export async function loadVisitForm(
-  patientId: string,
-  visitId: string,
-  locale: Locale,
-): Promise<VisitForm | null> {
-  const copy = t(locale);
-  const visit = await getPool().query(
-    `select id from public.visit where id = $1 and patient_id = $2`,
-    [visitId, patientId],
+export type PatientChart = NonNullable<Awaited<ReturnType<typeof loadHistory>>>;
+export async function listMedications(locale: Locale) {
+  const result = await getPool().query<{ id: string; name: string }>(
+    "select id::text,name from public.medication order by name",
   );
-  if (visit.rowCount === 0) return null;
-
-  const questionnaire = await getPool().query<Sql>(
-    `select id::text, title from public.questionnaire
-     where status = 'active'
-     order by id
-     limit 1`,
-  );
-  const form = questionnaire.rows[0];
-  if (!form) return null;
-
-  const items = await getPool().query<Sql>(
-    `select id::text, link_id, prompt, type, required, enable_behavior
-     from public.questionnaire_item
-     where questionnaire_id = $1
-     order by sequence`,
-    [form.id],
-  );
-  const options = await getPool().query<Sql>(
-    `select item_id::text, code, display
-     from public.questionnaire_item_option
-     order by sequence`,
-  );
-  const rules = await getPool().query<Sql>(
-    `select item_id::text, question_link_id, operator, answer_boolean, answer_string, answer_coding
-     from public.questionnaire_item_enable_when`,
-  );
-  const problems = await getPool().query<Sql>(
-    `select hkctt_term_id, description
-     from public.problem
-     where patient_id = $1 and clinical_status = 'active'`,
-    [patientId],
-  );
-  const withhold = await getPool().query<Sql>(
-    `select rule.when_hkctt_term_id, rule.when_problem_text, rule.reason,
-            medication.local_code, medication.name
-     from public.medication_withhold_rule rule
-     join public.medication on medication.id = rule.withhold_medication_id
-     where rule.questionnaire_id = $1`,
-    [form.id],
-  );
-
-  const activeTerms = new Set(
-    problems.rows.map((problem) => str(problem.hkctt_term_id)).filter(Boolean),
-  );
-  const withheld = withhold.rows
-    .filter((rule) => activeTerms.has(str(rule.when_hkctt_term_id)))
-    .map((rule) => {
-      const medicine = phrase(locale, str(rule.name));
-      const problem = phrase(locale, str(rule.when_problem_text));
-      const reason =
-        locale === "zh-HK"
-          ? `病歷已有${problem}，所以不提供${medicine}。`
-          : `${medicine} is not offered because ${problem} is already on the chart.`;
-      return { code: str(rule.local_code), reason };
-    });
-  const hidden = new Set(withheld.map((item) => item.code));
-
-  return {
-    questionnaireId: str(form.id),
-    title: phrase(locale, str(form.title)),
-    withheld,
-    items: items.rows.map((item) => ({
-      linkId: str(item.link_id),
-      prompt: phrase(locale, str(item.prompt)),
-      type: str(item.type),
-      required: item.required === true,
-      enableBehavior:
-        item.enable_behavior === "any" || item.enable_behavior === "all"
-          ? item.enable_behavior
-          : null,
-      enableWhen: rules.rows
-        .filter((rule) => str(rule.item_id) === str(item.id))
-        .map((rule) => ({
-          questionLinkId: str(rule.question_link_id),
-          operator: str(rule.operator),
-          answerBoolean:
-            rule.answer_boolean == null ? null : rule.answer_boolean === true,
-          answerString: rule.answer_string == null ? null : str(rule.answer_string),
-          answerCoding: rule.answer_coding == null ? null : str(rule.answer_coding),
-        })),
-      options: options.rows
-        .filter((option) => str(option.item_id) === str(item.id))
-        .filter((option) => !hidden.has(str(option.code)))
-        .map((option) => ({
-          code: str(option.code),
-          label: phrase(locale, str(option.display)),
-        })),
-    })),
-  };
+  return result.rows.map((row) => ({ ...row, name: phrase(locale, row.name) }));
 }
