@@ -1980,3 +1980,21 @@ h2 {
 .consultation-context .panel {
   max-height: 170px;
 }
+.demo-guide { margin-bottom: 24px; background: #edf3ff; border: 1px solid #dce7fc; border-radius: 14px; color: #435574; }
+.guide-intro { display: flex; align-items: center; gap: 13px; padding: 16px 20px; }
+.guide-icon { flex-shrink: 0; width: 35px; height: 35px; display: grid; place-items: center; border-radius: 10px; background: #fff; color: #3275f6; }
+.guide-intro > div { flex: 1; }
+.guide-intro strong { font-size: 13px; font-weight: 500; color: #29466f; }
+.guide-intro p { margin-top: 4px; font-size: 12px; color: #7a8caa; line-height: 1.6; }
+.guide-toggle { flex-shrink: 0; display: inline-flex; align-items: center; gap: 7px; border: 0; background: #fff; border-radius: 9px; padding: 9px 12px; font-size: 12px; color: #2869dd; }
+.guide-walkthrough { border-top: 1px solid #dce7fc; padding: 20px; background: #fff; border-radius: 0 0 14px 14px; }
+.guide-progress { display: flex; gap: 6px; margin-bottom: 20px; max-width: 280px; }
+.guide-progress button { height: 4px; flex: 1; border: 0; padding: 0; border-radius: 3px; background: #e9edf5; }
+.guide-progress button.reached { background: #3275f6; }
+.guide-walkthrough small { color: #8e9bb0; font-size: 10px; letter-spacing: 1px; }
+.guide-walkthrough h2 { color: #253b5c; font-size: 17px; font-weight: 500; margin: 8px 0; }
+.guide-walkthrough p { max-width: 780px; line-height: 1.8; font-size: 13px; color: #738097; }
+.guide-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 20px; }
+.guide-shortcut { margin-left: auto; color: #3275f6; font-size: 12px; }
+@media (max-width: 600px) { .guide-intro { padding: 14px; align-items: start; flex-wrap: wrap; } .guide-intro > div { flex-basis: calc(100% - 50px); } .guide-toggle { margin-left: 48px; } .guide-walkthrough { padding: 18px; } }
+@media print { .demo-guide { display: none; } }

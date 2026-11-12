@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Plus, Search, Stethoscope } from "lucide-react";
 import { ClinicNav } from "@/components/clinic-nav";
+import { DemoGuide } from "@/components/demo-guide";
 import { setLocale } from "@/app/actions";
 import { clinicCopy } from "@/lib/clinic-copy";
 import type { Locale } from "@/lib/locale-shared";
@@ -87,6 +88,7 @@ export function ClinicShell({
           </Link>
         </header>
         <main id="main" className="workspace">
+          <DemoGuide locale={locale}/>
           {children}
         </main>
       </div>
