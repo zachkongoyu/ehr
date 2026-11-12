@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
 import { VisitRecord } from "@/components/visit-record";
+import { MedicinePicker } from "@/components/medicine-picker";
 import { clinicCopy } from "@/lib/clinic-copy";
 import {
   noteFields,
@@ -275,27 +276,20 @@ export function VisitFormCard({
                   <div className="prescription-top">
                     <label htmlFor={"medicine-" + index}>
                       {c.medicine}
-                      <select
+                      <MedicinePicker
                         id={"medicine-" + index}
                         value={item.medicationId}
-                        onChange={(event) => {
+                        medicines={medications}
+                        locale={locale}
+                        onChange={(medicationId) => {
                           setPrescriptions(
                             prescriptions.map((row, i) =>
-                              i === index
-                                ? { ...row, medicationId: event.target.value }
-                                : row,
+                              i === index ? { ...row, medicationId } : row,
                             ),
                           );
                           changed();
                         }}
-                      >
-                        <option value="">{c.choose}</option>
-                        {medications.map((medicine) => (
-                          <option key={medicine.id} value={medicine.id}>
-                            {medicine.name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </label>
                     <button
                       type="button"
@@ -320,6 +314,11 @@ export function VisitFormCard({
                         <input
                           id={field + "-" + index}
                           maxLength={2000}
+                          list={
+                            field === "dose"
+                              ? undefined
+                              : field + "-suggestions"
+                          }
                           value={item[field]}
                           onChange={(event) => {
                             setPrescriptions(
@@ -358,6 +357,46 @@ export function VisitFormCard({
             )}
           </section>
         </fieldset>
+        <datalist id="route-suggestions">
+          {[
+            "Oral",
+            "Sublingual",
+            "Buccal",
+            "Topical",
+            "Inhalation",
+            "Intranasal",
+            "Ophthalmic",
+            "Otic",
+            "Rectal",
+            "Vaginal",
+            "Subcutaneous",
+            "Intramuscular",
+            "Intravenous",
+            "Transdermal",
+          ].map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
+        <datalist id="frequency-suggestions">
+          {[
+            "Once daily",
+            "Twice daily",
+            "Three times daily",
+            "Four times daily",
+            "Every 4 hours",
+            "Every 6 hours",
+            "Every 8 hours",
+            "Every 12 hours",
+            "At bedtime",
+            "Before meals",
+            "After meals",
+            "Once weekly",
+            "As needed",
+            "Single dose",
+          ].map((value) => (
+            <option key={value} value={value} />
+          ))}
+        </datalist>
         <div className="save-bar">
           <div className="save-status" aria-live="polite">
             {error ? (

@@ -8,7 +8,7 @@ export default async function PatientHistoryPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ visit?: string }>;
+  searchParams: Promise<{ visit?: string; section?: string }>;
 }) {
   const { id } = await params;
   if (!/^\d+$/.test(id)) notFound();
@@ -23,6 +23,7 @@ export default async function PatientHistoryPage({
       locale={locale}
       patient={patient}
       selectedId={search.visit}
+      section={search.section}
     />
   );
 }

@@ -3,16 +3,8 @@ import { readFile } from "node:fs/promises";
 import { encodeReply } from "next/dist/compiled/react-server-dom-webpack/client.node.js";
 import { Pool } from "pg";
 
-const entryUrl = (await readFile(".scratch/preview-url", "utf8")).trim();
-if (!/^http:\/\/localhost:3101\/[a-f0-9]{32}$/.test(entryUrl))
-  throw new Error("Run npm run preview first");
 const origin = "http://localhost:3100";
-const login = await fetch(entryUrl, { redirect: "manual" });
-const cookie = login.headers
-  .getSetCookie()
-  .map((value) => value.split(";")[0])
-  .join("; ");
-assert.ok(cookie.includes("session_token"));
+const cookie = "locale=en";
 const manifest = JSON.parse(
   await readFile(".next/server/server-reference-manifest.json", "utf8"),
 );
@@ -24,7 +16,7 @@ async function page(path) {
   assert.equal(response.status, 200, path);
   const html = await response.text();
   assert.ok(!html.includes("Application error"), path);
-  return html;
+  return html.replaceAll("&#x27;", "'");
 }
 async function action(name, args, path = "/patients") {
   const body = await encodeReply(args);
@@ -55,10 +47,84 @@ const db = new Pool({
   max: 1,
 });
 try {
-  const denied = await fetch(origin + "/patients", { redirect: "manual" });
-  assert.equal(denied.status, 307);
-  assert.ok(denied.headers.get("location").includes("sign-in"));
+  const landing = await fetch(origin + "/", { redirect: "manual" });
+  assert.equal(landing.status, 307);
+  assert.equal(landing.headers.get("location"), "/dashboard");
+  assert.equal((await fetch(origin + "/dashboard")).status, 200);
   assert.ok((await page("/patients")).includes("Patient directory"));
+  const dashboard = await page("/dashboard");
+  assert.ok(dashboard.includes('class="app-sidebar"'));
+  assert.ok(dashboard.includes('data-slot="bar-chart"'));
+  assert.ok(dashboard.includes("Monthly consultation activity data"));
+  for (const label of [
+    "Clinic overview",
+    "Continue consultations",
+    "Open consultations",
+    "Resume",
+  ])
+    assert.ok(dashboard.includes(label), label);
+  assert.ok(
+    !dashboard.includes('class="patient-table"'),
+    "overview uses cards and charts rather than the full table",
+  );
+  assert.ok(dashboard.includes("Today's visit status"));
+  assert.ok((await page("/consultations?status=open")).includes("Resume"));
+  assert.ok(
+    (await page("/consultations?status=completed")).includes(
+      "status-badge finished",
+    ),
+  );
+  const demo = (
+    await db.query(
+      "select id::text from patient where chart_number='DEMO-0101'",
+    )
+  ).rows[0];
+  const overview = await page("/patients/" + demo.id);
+  assert.ok(overview.includes('data-slot="line-chart"'));
+  assert.ok(overview.includes("Blood pressure data"));
+  assert.ok(overview.includes("mmHg"));
+  for (const label of [
+    "Visit timeline",
+    "Latest recorded vitals",
+    "Clinical data",
+    "Care plans",
+    "Patient profile",
+  ])
+    assert.ok(overview.includes(label), label);
+  const demoVisits = (
+    await db.query("select id::text from visit where patient_id=$1", [demo.id])
+  ).rows;
+  assert.equal(demoVisits.length, 5);
+  for (const visit of demoVisits)
+    assert.ok(
+      overview.includes(`?visit=${visit.id}`),
+      "timeline links every encounter",
+    );
+  assert.ok(
+    (await page(`/patients/${demo.id}?section=profile`)).includes(
+      "Identity document type",
+    ),
+  );
+  assert.ok(
+    (await page(`/patients/${demo.id}?section=plans`)).includes(
+      "Documented plans and follow-up",
+    ),
+  );
+  assert.ok(
+    (await page(`/patients/${demo.id}?section=medications`)).includes(
+      "Source / status",
+    ),
+  );
+  assert.ok(
+    (await page("/medications?q=Metformin")).includes(
+      "Metformin 850 mg tablet",
+    ),
+  );
+  assert.ok(
+    (await page("/medications?q=no-such-product")).includes(
+      "No matching medicines",
+    ),
+  );
   assert.ok((await page("/patients?q=SAMPLE-0001")).includes("SAMPLE-0001"));
   assert.ok(
     !(await page("/patients?q=NO-SUCH-PATIENT")).includes(
@@ -151,6 +217,10 @@ try {
     draft.values.some((value) => value?.ok === true && value.version === 1),
   );
   assert.ok((await page(visitPath)).includes("A saved history"));
+  const restored = await page(visitPath);
+  assert.ok(restored.includes("Search medicines by product name or strength"));
+  assert.ok(restored.includes("Metformin 850 mg tablet"));
+  assert.ok(restored.includes("route-suggestions"));
   assert.equal(
     (await db.query("select status from visit where id=$1", [visitId])).rows[0]
       .status,
@@ -198,7 +268,7 @@ try {
   ])
     assert.ok(history.includes(text), text);
   console.log(
-    "Passed: authentication, patient search and registration, allergy recording, resume, editor rendering, draft reload, stale-edit rejection, completion, repeat submission, prescription deduplication, and visit history.",
+    "Passed: direct demo entry, clinic dashboard, visible timeline with five encounters, chart sections, medication catalogue search, patient search and registration, allergy recording, resume, editor rendering, searchable medication picker rendering, draft reload, stale-edit rejection, completion, repeat submission, prescription deduplication, and visit history.",
   );
 } finally {
   await db.end();

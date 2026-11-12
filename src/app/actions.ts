@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+
 import { getPool } from "@/lib/db";
 import {
   ChartError,
@@ -17,13 +17,8 @@ export async function setLocale(locale: Locale) {
     throw new Error("Invalid language");
   (await cookies()).set("locale", locale, { path: "/", sameSite: "lax" });
 }
-async function requireUser() {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
-  return session.user;
-}
+const clinician = "Demo clinician";
 export async function startVisit(patientId: string) {
-  const user = await requireUser();
   if (!/^\d+$/.test(patientId)) throw new Error("Invalid patient");
   const client = await getPool().connect();
   let visitId: string;
@@ -42,7 +37,7 @@ export async function startVisit(patientId: string) {
     else {
       const inserted = await client.query<{ id: string }>(
         "insert into public.visit (patient_id,status,started_at,provider_name) values ($1,'in-progress',now(),$2) returning id::text",
-        [patientId, user.name],
+        [patientId, clinician],
       );
       visitId = inserted.rows[0].id;
     }
@@ -61,13 +56,12 @@ export async function saveVisit(
 ): Promise<
   { ok: true; version: number } | { ok: false; error: ChartError["code"] }
 > {
-  const user = await requireUser();
   try {
     const input = parseConsultation(raw);
     const client = await getPool().connect();
     let version: number;
     try {
-      version = await writeConsultation(client, input, user.name);
+      version = await writeConsultation(client, input, clinician);
     } finally {
       client.release();
     }
@@ -93,7 +87,6 @@ export async function savePatient(
   patientId: string | null,
   form: FormData,
 ): Promise<{ error: string } | { id: string }> {
-  await requireUser();
   const chartNumber = field(form, "chart_number", true),
     name = field(form, "name_text", true),
     family = field(form, "family_name", true),
@@ -145,7 +138,6 @@ export async function savePatient(
   }
 }
 export async function addAllergy(patientId: string, form: FormData) {
-  await requireUser();
   if (!/^\d+$/.test(patientId)) throw new Error("Invalid patient");
   await getPool().query(
     "insert into public.patient_allergy (patient_id,substance,reaction) values ($1,$2,$3)",
@@ -154,7 +146,6 @@ export async function addAllergy(patientId: string, form: FormData) {
   revalidatePath("/patients/" + patientId);
 }
 export async function addProblem(patientId: string, form: FormData) {
-  await requireUser();
   if (!/^\d+$/.test(patientId)) throw new Error("Invalid patient");
   await getPool().query(
     "insert into public.problem (patient_id,category,clinical_status,description,recorded_on) values ($1,'problem-list-item','active',$2,(now() at time zone 'Asia/Hong_Kong')::date)",

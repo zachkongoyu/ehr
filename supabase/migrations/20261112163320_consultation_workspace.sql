@@ -37,3 +37,14 @@ create table public.patient_allergy (
 create index patient_allergy_patient_idx on public.patient_allergy(patient_id);
 alter table public.patient_allergy enable row level security;
 revoke all on public.patient_allergy from public, anon, authenticated;
+
+do $$
+begin
+  if exists (select 1 from pg_roles where rolname = 'ehr_app') then
+    grant select, insert, update on public.visit_note to ehr_app;
+    grant select, insert, delete on public.visit_observation to ehr_app;
+    grant select, insert on public.patient_allergy to ehr_app;
+    grant usage on sequence public.patient_allergy_id_seq to ehr_app;
+  end if;
+end;
+$$;

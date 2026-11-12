@@ -138,10 +138,11 @@ export async function loadHistory(patientId: string, locale: Locale) {
       id: string;
       name: string;
       dose_text: string | null;
+      route_text: string | null;
       frequency_text: string | null;
       status: string;
     }>(
-      "select statement.id::text,medication.name,dose_text,frequency_text,status from public.medication_statement statement join public.medication on medication.id=statement.medication_id where patient_id=$1 and status='active' order by statement.id",
+      "select statement.id::text,medication.name,dose_text,route_text,frequency_text,status from public.medication_statement statement join public.medication on medication.id=statement.medication_id where patient_id=$1 and status='active' order by statement.id",
       [patientId],
     ),
     db.query<{
