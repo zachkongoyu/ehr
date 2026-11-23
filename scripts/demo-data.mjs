@@ -1,3 +1,5 @@
+import { seedCorrelationCases } from "./correlation-cases.mjs";
+
 export const medicines = [
   ["PARACETAMOL-500", "Paracetamol 500 mg tablet"],
   ["IBUPROFEN-200", "Ibuprofen 200 mg tablet"],
@@ -340,5 +342,6 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
       }
     }
   }
+  if (hasNotes) await seedCorrelationCases(db, anchor, added);
   return added;
 }

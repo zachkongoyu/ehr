@@ -44,6 +44,12 @@ export default async function ConsultationsPage({
     order by v.started_at desc,v.id desc limit 100`,
     [filter, query, "%" + query + "%"],
   );
+  const examples = await getPool().query<{ patient_id: string; visit_id: string; chart_number: string }>(
+    `select p.id::text as patient_id, v.id::text as visit_id, p.chart_number
+     from public.patient p join public.visit v on v.patient_id=p.id and v.status='in-progress'
+     where p.chart_number in ('DEMO-RHYTHM-A','DEMO-RHYTHM-B')
+     order by p.chart_number`,
+  );
   return (
     <ClinicShell locale={locale}>
       <div className="page-heading">
@@ -62,6 +68,18 @@ export default async function ConsultationsPage({
           {en ? "Start consultation" : "開始診症"}
         </Link>
       </div>
+      {examples.rows.length > 0 && (
+        <section className="case-comparison" aria-label={en ? "Compare demo cases" : "比較示範個案"}>
+          <h2>{en ? "Compare demo cases" : "比較示範個案"}</h2>
+          {examples.rows.map((item) => {
+            const first = item.chart_number.endsWith("-A");
+            const label = first ? (en ? "A · Palpitations, no linked rhythm history" : "A · 心悸，未有相關心律病史")
+              : (en ? "B · Palpitations, prior rhythm history" : "B · 心悸，有過往心律病史");
+            return <Link key={item.visit_id} className="button secondary"
+              href={`/patients/${item.patient_id}/visits/${item.visit_id}`}>{label}</Link>;
+          })}
+        </section>
+      )}
       <section className="panel">
         <form action="/consultations" className="consultation-filters">
           <label>

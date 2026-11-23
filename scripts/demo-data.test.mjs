@@ -23,11 +23,22 @@ test("demo seed adds varied synthetic charts and is safe to repeat", async () =>
     await db.query("begin");
     const added = await seedDemo(db);
     await db.query("commit");
-    assert.equal(added.patients, 18);
-    assert.equal(added.visits, 90);
-    assert.equal(added.notes, 90);
+    assert.equal(added.patients, 20);
+    assert.equal(added.visits, 93);
+    assert.equal(added.notes, 93);
     assert.equal(added.observations, 720);
     assert.equal(added.medicines, 40);
+    const comparison = await db.query(
+      `select p.chart_number, n.complaint,
+              exists(select 1 from problem where patient_id=p.id and hkctt_term_id='7871' and clinical_status='active') as rhythm_history
+       from patient p join visit v on v.patient_id=p.id join visit_note n on n.visit_id=v.id
+       where p.chart_number in ('DEMO-RHYTHM-A','DEMO-RHYTHM-B') and v.status='in-progress'
+       order by p.chart_number`,
+    );
+    assert.deepEqual(comparison.rows.map(({ complaint, rhythm_history }) => [complaint, rhythm_history]), [
+      ["Palpitations", false],
+      ["Palpitations", true],
+    ]);
     await db.query("begin");
     const repeated = await seedDemo(db);
     await db.query("commit");
@@ -38,7 +49,7 @@ test("demo seed adds varied synthetic charts and is safe to repeat", async () =>
           "select count(*)::integer as count from patient where chart_number like 'DEMO-%'",
         )
       ).rows[0].count,
-      18,
+      20,
     );
     assert.equal(
       (
@@ -46,7 +57,7 @@ test("demo seed adds varied synthetic charts and is safe to repeat", async () =>
           "select count(*)::integer as count from visit where status='in-progress'",
         )
       ).rows[0].count,
-      6,
+      8,
     );
   } finally {
     await db.close();

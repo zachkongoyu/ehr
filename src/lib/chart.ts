@@ -117,8 +117,9 @@ export async function loadHistory(patientId: string, locale: Locale) {
       description: string;
       category: string;
       clinical_status: string;
+      hkctt_term_id: string | null;
     }>(
-      "select id::text,visit_id::text,description,category,clinical_status from public.problem where patient_id=$1 order by recorded_on desc,id desc",
+      "select id::text,visit_id::text,description,category,clinical_status,hkctt_term_id from public.problem where patient_id=$1 order by recorded_on desc,id desc",
       [patientId],
     ),
     db.query<{

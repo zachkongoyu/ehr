@@ -126,6 +126,10 @@ export function VisitFormCard({
   );
   const respiratory = areaMatches.some((area) => area.id === "respiratory");
   const palpitations = areaMatches.some((area) => area.id === "cardiac");
+  const rhythmProblem = patient.problems.find((problem) => problem.hkctt_term_id === "7871");
+  const rhythmVisit = previous.find((item) => item.status === "finished" &&
+    /(?:^| · )(?:palpitations|心悸)(?: · |$)/i.test(item.note.complaint));
+  const recordedRhythmContext = Boolean(rhythmProblem || rhythmVisit);
   const [openedArea, setOpenedArea] = useState<string | null>(null);
   const focusedAreas = consultationAreas.filter((area) =>
     areaMatches.includes(area) || area.id === openedArea,
@@ -334,6 +338,27 @@ export function VisitFormCard({
               </button>
             </section>
           )}
+          {palpitations && stage <= 2 && (
+            <section className="rhythm-context" aria-labelledby="rhythm-context-heading">
+              <h2 id="rhythm-context-heading">{en ? "Palpitations and chart history" : "心悸與過往病歷"}</h2>
+              <div className="rhythm-context-facts">
+                {rhythmProblem && <p><strong>{en ? "Active condition" : "持續健康問題"} </strong>{rhythmProblem.description}</p>}
+                {rhythmVisit && <button type="button" className="button secondary small" onClick={() => {
+                  setPreviousId(rhythmVisit.id);
+                  document.getElementById("reference-history-heading")?.focus();
+                }}>
+                  {en ? "Open prior palpitations visit" : "查看過往心悸診症"} · {rhythmVisit.date}
+                </button>}
+                {!recordedRhythmContext && <p>{en ? "No linked rhythm condition or prior palpitations visit found in this chart."
+                  : "病歷中未找到相關心律問題或過往心悸診症。"}</p>}
+              </div>
+              {recordedRhythmContext && (
+                <button type="button" className="text-link" onClick={() => openStage(1, "palpitation-questions")}>
+                  {en ? "Compare today’s symptoms" : "比較本次症狀"}
+                </button>
+              )}
+            </section>
+          )}
           <section hidden={stage !== 0} id="visit-complaint" className="form-section">
             <div className="section-heading">
               
@@ -417,6 +442,12 @@ export function VisitFormCard({
                 prefix={en ? "Palpitations started · " : "心悸開始 · "} exclusive
                 options={en ? ["Today", "This week", "More than one week ago"] : ["今天", "本週", "一週前"]}
                 value={note.history} onChange={(value) => updateNote("history", value)} />
+              {recordedRhythmContext && (
+                <VisitChoices title={en ? "Compared with the previous rhythm history" : "與過往心律病史比較"}
+                  prefix={en ? "Compared with prior rhythm history · " : "與過往心律病史比較 · "} exclusive
+                  options={en ? ["Similar", "Different", "Unclear"] : ["相似", "不同", "未能確定"]}
+                  value={note.history} onChange={(value) => updateNote("history", value)} />
+              )}
             </details>
             {focusedAreas.filter((area) => area.id !== "respiratory" && area.id !== "cardiac").map((area) => (
               <div key={area.id} className="area-history">
@@ -669,7 +700,7 @@ export function VisitFormCard({
         {context}
         <section className="panel">
           <div className="panel-heading">
-            <h2>{c.visits}</h2>
+            <h2 id="reference-history-heading" tabIndex={-1}>{c.visits}</h2>
           </div>
           {previous.length ? (
             <>

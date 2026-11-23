@@ -348,3 +348,10 @@ body { font-family: "Noto Sans HK", Arial, sans-serif; }
   }
   .clinical-map-areas:has([data-state="active"])::after { background: var(--brand); }
 }
+
+.case-comparison, .rhythm-context { padding: 14px 16px; border-left: 3px solid var(--brand); background: #edf4fb; }
+.case-comparison { margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rhythm-context { margin: 16px 22px; }
+.rhythm-context-facts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.rhythm-context .text-link { min-height: 44px; }
+@media (max-width: 600px) { .rhythm-context { margin-inline: 12px; } }
