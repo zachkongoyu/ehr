@@ -43,12 +43,6 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
        from public.visit v`,
     ),
   ]);
-  const examples = await db.query<{ patient_id: string; visit_id: string; chart_number: string }>(
-    `select p.id::text as patient_id, v.id::text as visit_id, p.chart_number
-     from public.patient p join public.visit v on v.patient_id=p.id and v.status='in-progress'
-     where p.chart_number in ('DEMO-RHYTHM-A','DEMO-RHYTHM-B')
-     order by p.chart_number`,
-  );
 
   const count = counts.rows[0];
   const statusText = (status: string) => status === "finished" ? (en ? "Completed" : "已完成")
@@ -84,18 +78,6 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             <div className="worklist-summary">
               <p><data>{visits.rows.length}</data> {en ? (visits.rows.length === 1 ? "visit" : "visits") : "次就診"}</p>
             </div>
-            {examples.rows.length > 0 && filter === "today" && (
-              <div className="case-comparison" aria-label={en ? "Compare demo cases" : "比較示範個案"}>
-                <strong>{en ? "Demo cases" : "示範個案"}</strong>
-                {examples.rows.map((item) => (
-                  <Link key={item.visit_id} href={`/patients/${item.patient_id}/visits/${item.visit_id}`}>
-                    {item.chart_number.endsWith("-A")
-                      ? (en ? "A · Palpitations, no rhythm history" : "A · 心悸，未有心律病史")
-                      : (en ? "B · Palpitations, prior rhythm history" : "B · 心悸，有過往心律病史")}
-                  </Link>
-                ))}
-              </div>
-            )}
             <ul className="visit-rows">
               {visits.rows.map((row) => {
                 const open = row.status === "in-progress";

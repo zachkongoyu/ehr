@@ -69,6 +69,9 @@ const people = [
 const scenarios = [
   {
     complaint: "Blood pressure follow-up",
+    history: "Home readings mostly 130s/80s. No headache, chest pain or breathlessness. Taking amlodipine every morning.",
+    examination: "Alert and comfortable. Heart sounds normal. No ankle oedema.",
+    assessment: "Hypertension, controlled on current treatment.",
     problem: "Hypertension",
     medication: "AMLODIPINE-5",
     dose: "1 tablet",
@@ -79,6 +82,9 @@ const scenarios = [
   },
   {
     complaint: "Diabetes review",
+    history: "Fasting glucose 6–8 mmol/L at home. No polyuria and no hypoglycaemic episodes. Diet reviewed with patient.",
+    examination: "Feet: pulses present, monofilament sensation intact, no ulcers.",
+    assessment: "Type 2 diabetes mellitus, stable.",
     problem: "Type 2 diabetes mellitus",
     medication: "METFORMIN-500",
     dose: "1 tablet",
@@ -89,6 +95,9 @@ const scenarios = [
   },
   {
     complaint: "Nasal symptoms review",
+    history: "Sneezing and nasal blockage, worse in the morning and with dust. No fever or facial pain.",
+    examination: "Nasal mucosa pale and swollen. Throat clear. Chest clear.",
+    assessment: "Allergic rhinitis.",
     problem: "Allergic rhinitis",
     medication: "CETIRIZINE-10",
     dose: "1 tablet",
@@ -99,6 +108,9 @@ const scenarios = [
   },
   {
     complaint: "Reflux symptoms review",
+    history: "Heartburn after late meals, better on omeprazole. No dysphagia, weight loss or black stools.",
+    examination: "Abdomen soft and non-tender.",
+    assessment: "Gastro-oesophageal reflux, improving.",
     problem: "Gastro-oesophageal reflux",
     medication: "OMEPRAZOLE-20",
     dose: "1 capsule",
@@ -109,6 +121,9 @@ const scenarios = [
   },
   {
     complaint: "Skin symptoms follow-up",
+    history: "Itchy dry patches on both elbows, flaring in dry weather. Using emollient twice daily.",
+    examination: "Dry, lichenified patches in both antecubital fossae. No signs of infection.",
+    assessment: "Atopic eczema, mild.",
     problem: "Atopic eczema",
     medication: "EMOLLIENT",
     dose: "Apply a thin layer",
@@ -119,6 +134,9 @@ const scenarios = [
   },
   {
     complaint: "Routine health review",
+    history: "No new symptoms. Non-smoker, drinks socially, exercises twice a week.",
+    examination: "Well. Cardiovascular and respiratory examination normal.",
+    assessment: "Health maintenance review; no new concerns.",
     problem: "Health maintenance review",
     medication: null,
     dose: "",
@@ -128,12 +146,20 @@ const scenarios = [
     followUp: "Routine review as discussed.",
   },
 ];
+const districts = [
+  "Kwun Tong, Kowloon", "Sha Tin, New Territories", "Mong Kok, Kowloon", "Tseung Kwan O, New Territories",
+  "Wan Chai, Hong Kong Island", "Tuen Mun, New Territories", "Sham Shui Po, Kowloon", "Tai Po, New Territories",
+  "North Point, Hong Kong Island", "Tsuen Wan, New Territories",
+];
+// Chart numbers in the clinic's own format: C followed by six digits.
+export const chartNumber = (index) => "C" + String(204117 + index * 389);
 export const demoPatients = people.map(
   ([family, given, chinese, sex, birth], index) => ({
-    chartNumber: "DEMO-" + String(index + 101).padStart(4, "0"),
+    chartNumber: chartNumber(index),
     family,
-    given: given + " (Demo)",
-    name: "示例 · " + chinese,
+    given,
+    name: chinese,
+    address: districts[index % districts.length],
     sex,
     birth,
     scenario: scenarios[index % scenarios.length],
@@ -171,19 +197,19 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
     }
     const inserted = await db.query(
       "insert into public.medication (local_code,name) values ($1,$2) on conflict (local_code) do nothing returning id::text",
-      ["DEMO-MED-" + code, name],
+      ["LOC-" + code, name],
     );
     added.medicines += inserted.rows.length;
     const result = await db.query(
       "select id::text from public.medication where local_code=$1",
-      ["DEMO-MED-" + code],
+      ["LOC-" + code],
     );
     medicineIds.set(code, result.rows[0].id);
   }
   for (const person of demoPatients) {
     const inserted = await db.query(
       `insert into public.patient (chart_number,family_name,given_name,name_text,sex,birth_date,address)
-   values ($1,$2,$3,$4,$5,$6,'Synthetic demonstration record — not a real patient')
+   values ($1,$2,$3,$4,$5,$6,$7)
    on conflict (chart_number) do nothing returning id::text`,
       [
         person.chartNumber,
@@ -192,6 +218,7 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
         person.name,
         person.sex,
         person.birth,
+        person.address,
       ],
     );
     added.patients += inserted.rows.length;
@@ -226,7 +253,7 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
     }
     if (hasNotes && person.index % 4 === 0) {
       const allergies = await db.query(
-        "insert into public.patient_allergy (patient_id,substance,reaction) select $1,'Demo allergen — penicillin','Synthetic example: reported rash' where not exists (select 1 from public.patient_allergy where patient_id=$1 and substance='Demo allergen — penicillin') returning id",
+        "insert into public.patient_allergy (patient_id,substance,reaction) select $1,'Penicillin','Rash' where not exists (select 1 from public.patient_allergy where patient_id=$1 and substance='Penicillin') returning id",
         [patient.id],
       );
       added.allergies += allergies.rows.length;
@@ -239,7 +266,7 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
       const started = date.toISOString();
       const status =
         visitIndex === 4 && person.index % 3 === 0 ? "in-progress" : "finished";
-      const doctor = ["Demo Dr Chan", "Demo Dr Wong", "Demo Dr Lee"][
+      const doctor = ["Dr Chan Ka Wai", "Dr Wong Siu Fung", "Dr Lee Hoi Ying"][
         person.index % 3
       ];
       const existing = await db.query(
@@ -254,7 +281,7 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
             : null;
         visit = (
           await db.query(
-            "insert into public.visit (patient_id,status,started_at,ended_at,provider_name,location_name) values ($1,$2,$3,$4,$5,'Demo clinic · Consultation room '||$6) returning id::text",
+            "insert into public.visit (patient_id,status,started_at,ended_at,provider_name,location_name) values ($1,$2,$3,$4,$5,'Consultation room '||$6) returning id::text",
             [
               patient.id,
               status,
@@ -300,13 +327,10 @@ export async function seedDemo(db, { anchor = "2026-11-13" } = {}) {
           [
             visit.id,
             scene.complaint,
-            "Synthetic record for workflow testing. Review " +
-              (visitIndex + 1) +
-              " of five; prior documentation is available in the visit timeline.",
-            "Synthetic examination entry. Recorded measurements are demonstration values.",
-            scene.problem + " — synthetic assessment.",
-            scene.plan +
-              " This is demonstration data, not prescribing guidance.",
+            scene.history,
+            scene.examination,
+            scene.assessment,
+            scene.plan,
             scene.followUp,
             doctor,
           ],

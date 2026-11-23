@@ -1,6 +1,6 @@
 # Clinic EHR
 
-A proof-of-concept outpatient patient chart and consultation workspace, in Traditional Chinese and English. It opens directly on the dashboard without authentication, as requested for the demo. Changes are attributed to "Demo clinician". Use synthetic records only; this version does not restrict access to patient charts or editing.
+A proof-of-concept outpatient patient chart and consultation workspace, in Traditional Chinese and English. It opens directly on the dashboard without authentication, as requested for the demo. Changes are attributed to "Duty doctor". All patient records are synthetic, even though they read like real charts; use synthetic records only; this version does not restrict access to patient charts or editing.
 
 ## Workflow
 
@@ -34,9 +34,9 @@ Run `npm run test:preview` in another terminal to check direct demo entry, dashb
 
 The blue and neutral interface uses a persistent left navigation and white cards. The dashboard gives activity and status charts more space than its compact resume list. Patient charts prioritise clinical context, current measurements and visit documentation, with a smaller longitudinal chart for blood pressure, weight or pulse. Charts use beUI source from its registry and include accessible values; missing clinical measurements are not converted to zero.
 
-The preview includes 18 clearly marked synthetic patients with five visits each, clinical notes, vitals, allergies and a broader medicine catalogue, alongside the original sample seed. `npm test` verifies that repeating the synthetic seed creates no duplicates.
+The preview includes 18 synthetic patients with five visits each, clinical notes, vitals, allergies and a broader medicine catalogue, plus two patients presenting with palpitations (one with a recorded rhythm history) and the original sample seed. The records carry no "demo" labels: names, chart numbers (C followed by six digits), districts, clinicians and notes read like a real clinic, but none of them belongs to a real person and none carries an identity document number. `npm test` verifies that repeating the synthetic seed creates no duplicates.
 
-`scripts/seed-demo.mjs --apply` is restricted to the configured EHR Supabase project and requires its database connection in the environment. It seeds in one transaction, preserves existing records and checks clinical table access before commit. Applying the migration requires a schema-owner connection; the restricted application role can seed after the migration has been applied. Do not run the original `supabase/seed.sql` against hosted data. The approved consultation migration and synthetic seed were applied to the EHR project on 13 November 2026: totals were 20 patients, 96 visits, 41 medicines, 90 notes, 720 vital measurements and 5 allergy entries.
+`scripts/seed-demo.mjs --apply` is restricted to the configured EHR Supabase project and requires its database connection in the environment. It seeds in one transaction, preserves existing records and checks clinical table access before commit. Applying the migration requires a schema-owner connection; the restricted application role can seed after the migration has been applied. Do not run the original `supabase/seed.sql` against hosted data. The approved consultation migration and synthetic seed were applied to the EHR project on 13 November 2026: totals were 20 patients, 96 visits, 41 medicines, 90 notes, 720 vital measurements and 5 allergy entries. On 23 November 2026 the hosted records were renamed in place with `scripts/realistic-records.sql`, which removes the earlier "示例"/"Demo"/"SAMPLE" labels to match the current seed; it is safe to run again.
 
 ## Data scope
 

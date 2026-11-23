@@ -60,20 +60,6 @@ const patientSelect = `
     (select id::text from public.visit where patient_id=patient.id and status='in-progress' order by started_at desc limit 1) as open_visit
   from public.patient`;
 
-export async function listPatients(
-  locale: Locale,
-  search = "",
-): Promise<Patient[]> {
-  const result = await getPool().query<Omit<Patient, "name">>(
-    patientSelect +
-      `
-    where ($1 = '' or concat_ws(' ',name_text,family_name,given_name,chart_number,phone) ilike $2)
-    order by chart_number limit 100`,
-    [search, "%" + search + "%"],
-  );
-  return result.rows.map((row) => ({ ...row, name: displayName(locale, row) }));
-}
-
 export async function loadHistory(patientId: string, locale: Locale) {
   const db = getPool();
   const result = await db.query<Omit<Patient, "name">>(

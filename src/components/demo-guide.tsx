@@ -84,34 +84,34 @@ function PageGuide({ pathname, locale }: { pathname: string; locale: Locale }) {
     ];
   } else if (pathname === "/patients") {
     title = en ? "Find a patient and start a visit" : "尋找病人並開始診症";
-    hint = en ? "Try a patient marked Demo to explore a complete example chart." : "選擇標示為示例的病人，體驗完整病歷。";
+    hint = en ? "Open any patient to explore a complete chart." : "開啟任何病人，即可瀏覽完整病歷。";
     steps = en ? [
-      {title:"Find the patient",body:"Search by name, chart number or phone. Demo patients have five example visits so you can explore a populated timeline."},
+      {title:"Find the patient",body:"Search by name, chart number or phone. Most patients have five earlier visits, so the timeline is already filled in."},
       {title:"Open their chart",body:"Select the patient's name to review their summary, allergies, medicines and visit history before starting a consultation."},
       {title:"Register or consult",body:"For a new person, use Register patient. For an existing patient, open the chart and choose New consultation or Resume consultation."},
     ] : [
-      {title:"尋找病人",body:"按姓名、病歷編號或電話搜尋。示例病人各有五次就診，可體驗已填寫的時間軸。"},
+      {title:"尋找病人",body:"按姓名、病歷編號或電話搜尋。大部分病人已有五次就診紀錄，時間軸已經填好。"},
       {title:"開啟病歷",body:"點選病人姓名，在開始診症前查看摘要、過敏、用藥及就診記錄。"},
       {title:"登記或診症",body:"新病人請按登記病人。現有病人可開啟病歷，再新增或繼續診症。"},
     ];
   } else {
-    title = en ? "Your first clinic walkthrough" : "首次使用診所示範";
+    title = en ? "Your first clinic walkthrough" : "首次使用導覽";
     hint = en ? "Start here: review clinic activity, find a patient, then document a visit." : "由此開始：查看診所活動、尋找病人，再記錄診症。";
     steps = en ? [
       {title:"Read the clinic overview",body:"The four figures show today's visits, all open consultations, completions today and registered patients. Times use Hong Kong time."},
       {title:"Explore the charts",body:"Monthly activity shows visits started each month, excluding cancellations. Today's status chart shows the status of visits started today. Hover or focus the charts to inspect their values."},
       {title:"Pick up unfinished work",body:"The short Continue consultations list puts the oldest open visits first. Use Resume to edit one, or View all for the complete worklist. Recently completed records open for review."},
-      {title:"Try the full workflow",body:"Open Patients, choose a Demo patient, review the chart and start or resume a consultation. Enter notes, save a draft, then complete the visit when ready. Each page has its own guide."},
+      {title:"Try the full workflow",body:"Open Patients, choose a patient, review the chart and start or resume a consultation. Enter notes, save a draft, then complete the visit when ready. Each page has its own guide."},
     ] : [
       {title:"閱讀診所總覽",body:"四個數字分別顯示今日就診、所有未完成診症、今日完成及已登記病人。時間均使用香港時間。"},
       {title:"探索圖表",body:"每月活動顯示各月開始的就診，不包括取消記錄。今日狀態圖顯示今日開始的就診狀態。將游標移到圖表或以鍵盤聚焦可查看數據。"},
       {title:"繼續未完成工作",body:"繼續診症清單優先列出最早的未完成就診。按繼續可編輯，查看全部可開啟完整工作清單。最近完成的病歷可開啟覆核。"},
-      {title:"體驗完整流程",body:"到病人頁選擇示例病人，閱讀病歷後新增或繼續診症，填寫資料、儲存草稿，準備好後完成。每頁都有專屬導覽。"},
+      {title:"體驗完整流程",body:"到病人頁選擇病人，閱讀病歷後新增或繼續診症，填寫資料、儲存草稿，準備好後完成。每頁都有專屬導覽。"},
     ];
   }
   const step = steps[index];
   return <section className={"demo-guide" + (open ? " expanded" : "")} aria-label={en ? "Page tutorial" : "頁面教學"}>
     <div className="guide-intro"><span className="guide-icon"><BookOpen size={18}/></span><div><strong>{title}</strong><p>{hint}</p></div><button type="button" className="guide-toggle" aria-expanded={open} aria-controls={id} onClick={() => setOpen(!open)}>{open ? <><X size={15}/><span>{en ? "Close guide" : "關閉導覽"}</span></> : <>{en ? "Show me how" : "逐步教學"}<ChevronRight size={15}/></>}</button></div>
-    {open && <div id={id} className="guide-walkthrough"><div className="guide-progress" aria-label={en ? "Tutorial progress" : "教學進度"}>{steps.map((item,i) => <button type="button" key={item.title} onClick={() => setIndex(i)} aria-label={`${en ? "Step" : "步驟"} ${i+1}: ${item.title}`} aria-current={i === index ? "step" : undefined} className={i <= index ? "reached" : ""}/>)}</div><div aria-live="polite"><small>{en ? "STEP" : "步驟"} {index+1} / {steps.length}</small><h2>{step.title}</h2><p>{step.body}</p></div><div className="guide-actions"><button type="button" className="button secondary small" disabled={index === 0} onClick={() => setIndex(index-1)}><ChevronLeft size={14}/>{en ? "Back" : "上一步"}</button>{index < steps.length-1 ? <button type="button" className="button primary small" onClick={() => setIndex(index+1)}>{en ? "Next step" : "下一步"}<ChevronRight size={14}/></button> : <button type="button" className="button primary small" onClick={() => {setOpen(false);setIndex(0);}}>{en ? "Got it" : "明白了"}</button>}<Link href="/patients" className="guide-shortcut">{en ? "Try a demo patient" : "體驗示例病人"}</Link></div></div>}
+    {open && <div id={id} className="guide-walkthrough"><div className="guide-progress" aria-label={en ? "Tutorial progress" : "教學進度"}>{steps.map((item,i) => <button type="button" key={item.title} onClick={() => setIndex(i)} aria-label={`${en ? "Step" : "步驟"} ${i+1}: ${item.title}`} aria-current={i === index ? "step" : undefined} className={i <= index ? "reached" : ""}/>)}</div><div aria-live="polite"><small>{en ? "STEP" : "步驟"} {index+1} / {steps.length}</small><h2>{step.title}</h2><p>{step.body}</p></div><div className="guide-actions"><button type="button" className="button secondary small" disabled={index === 0} onClick={() => setIndex(index-1)}><ChevronLeft size={14}/>{en ? "Back" : "上一步"}</button>{index < steps.length-1 ? <button type="button" className="button primary small" onClick={() => setIndex(index+1)}>{en ? "Next step" : "下一步"}<ChevronRight size={14}/></button> : <button type="button" className="button primary small" onClick={() => {setOpen(false);setIndex(0);}}>{en ? "Got it" : "明白了"}</button>}<Link href="/patients" className="guide-shortcut">{en ? "Open patients" : "前往病人"}</Link></div></div>}
   </section>;
 }

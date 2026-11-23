@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 import { seedDemo } from "./demo-data.mjs";
+import { comparisonCases } from "./correlation-cases.mjs";
 
-test("demo seed adds varied synthetic charts and is safe to repeat", async () => {
+test("seed adds varied charts and is safe to repeat", async () => {
   const db = new PGlite();
   try {
     await db.exec("create role anon;create role authenticated;");
@@ -32,8 +33,9 @@ test("demo seed adds varied synthetic charts and is safe to repeat", async () =>
       `select p.chart_number, n.complaint,
               exists(select 1 from problem where patient_id=p.id and hkctt_term_id='7871' and clinical_status='active') as rhythm_history
        from patient p join visit v on v.patient_id=p.id join visit_note n on n.visit_id=v.id
-       where p.chart_number in ('DEMO-RHYTHM-A','DEMO-RHYTHM-B') and v.status='in-progress'
+       where p.chart_number = any($1) and v.status='in-progress'
        order by p.chart_number`,
+      [comparisonCases.map((item) => item.chart)],
     );
     assert.deepEqual(comparison.rows.map(({ complaint, rhythm_history }) => [complaint, rhythm_history]), [
       ["Palpitations", false],
@@ -46,7 +48,7 @@ test("demo seed adds varied synthetic charts and is safe to repeat", async () =>
     assert.equal(
       (
         await db.query(
-          "select count(*)::integer as count from patient where chart_number like 'DEMO-%'",
+          "select count(*)::integer as count from patient",
         )
       ).rows[0].count,
       20,
