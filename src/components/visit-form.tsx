@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
@@ -23,10 +23,12 @@ export function VisitFormCard({
   visit,
   medications,
   withheld,
+  context,
 }: {
   locale: Locale;
   patient: PatientChart;
   visit: VisitView;
+  context: ReactNode;
   withheld: { id: string; name: string; reason: string }[];
   medications: { id: string; name: string }[];
 }) {
@@ -514,7 +516,8 @@ export function VisitFormCard({
           </div>
         </div>
       </form>
-      <aside className="reference-panel">
+      <aside id="visit-reference" className="reference-panel" tabIndex={-1}>
+        {context}
         <section className="panel">
           <div className="panel-heading">
             <h2>{c.visits}</h2>

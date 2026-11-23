@@ -10,7 +10,7 @@ export function ClinicNav({ locale }: { locale: Locale }) {
   const links = [
     {
       href: "/dashboard",
-      label: en ? "Clinic overview" : "診所總覽",
+      label: en ? "Overview" : "總覽",
       icon: LayoutDashboard,
     },
     { href: "/patients", label: en ? "Patients" : "病人", icon: Users },

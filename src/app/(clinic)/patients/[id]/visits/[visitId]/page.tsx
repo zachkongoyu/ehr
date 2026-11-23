@@ -28,18 +28,17 @@ export default async function VisitFormPage({
   return (
     <ClinicShell locale={locale}>
       <PatientHeader patient={patient} locale={locale} mode="consultation" />
-      <a className="editor-shortcut button secondary" href="#visit-workspace">
-        {locale === "en" ? "Go to visit workspace" : "前往本次診症"}
+      <a className="chart-context-shortcut" href="#visit-reference">
+        {locale === "en" ? "Allergies and chart context" : "過敏及病歷資料"}
+        {patient.allergies.length > 0 && ` (${patient.allergies.length})`}
       </a>
-      <div className="consultation-context">
-        <ChartContext patient={patient} locale={locale} mode="consultation" />
-      </div>
       <VisitFormCard
         locale={locale}
         patient={patient}
         visit={visit}
         medications={medications}
         withheld={withheld}
+        context={<ChartContext patient={patient} locale={locale} mode="consultation" />}
       />
     </ClinicShell>
   );

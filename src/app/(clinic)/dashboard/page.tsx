@@ -64,24 +64,11 @@ export default async function DashboardPage() {
       <div className="page-heading">
         <div>
           <h1>{en ? "Clinic overview" : "診所總覽"}</h1>
-          <p>
-            {en
-              ? "Today's activity and the consultations that need your attention."
-              : "查看今日活動及有待處理的診症。"}
-          </p>
         </div>
         <Link className="button primary" href="/patients">
           <Plus size={16} />
           {en ? "Start consultation" : "開始診症"}
         </Link>
-      </div>
-      <div className="metric-grid">
-        {metrics.map(([label, value]) => (
-          <section className="panel metric" key={label}>
-            <span>{label}</span>
-            <strong>{value}</strong>
-          </section>
-        ))}
       </div>
       <div className="dashboard-grid">
         <div className="dashboard-main">
@@ -96,43 +83,35 @@ export default async function DashboardPage() {
                 <ArrowUpRight size={14} />
               </Link>
             </div>
-            <p className="card-caption">
-              {en
-                ? "Oldest open visits first · showing up to 4"
-                : "最早的未完成診症優先 · 最多顯示4項"}
-            </p>
-            <div className="dashboard-worklist">
-              {pending.rows.map((row) => (
-                <article className="consultation-card" key={row.id}>
-                  <div className="list-avatar" aria-hidden="true">
-                    {displayName(locale, row).slice(0, 1)}
-                  </div>
-                  <div>
-                    <Link
-                      className="work-patient"
-                      href={`/patients/${row.patient_id}`}
-                    >
-                      {displayName(locale, row)}
-                    </Link>
-                    <p>
-                      {row.complaint ||
-                        (en ? "Consultation in progress" : "診症進行中")}
-                    </p>
-                    <small>
-                      {formatWhen(row.started_at, locale)} ·{" "}
-                      {row.provider_name || "—"}
-                    </small>
-                  </div>
-                  <Link
-                    className="button secondary small"
-                    href={`/patients/${row.patient_id}/visits/${row.id}`}
-                  >
-                    {en ? "Resume" : "繼續"}
-                    <ArrowUpRight size={13} />
-                  </Link>
-                </article>
-              ))}
-            </div>
+            {pending.rows.length > 0 && <div className="table-scroll">
+              <table className="patient-table queue-table">
+                <thead><tr>
+                  <th scope="col">{en ? "Patient" : "病人"}</th>
+                  <th scope="col">{en ? "Presenting complaint" : "主訴"}</th>
+                  <th scope="col">{en ? "Started" : "開始時間"}</th>
+                  <th scope="col"><span className="sr-only">{en ? "Action" : "操作"}</span></th>
+                </tr></thead>
+                <tbody>
+                  {pending.rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <Link className="work-patient" href={`/patients/${row.patient_id}`}>
+                          {displayName(locale, row)}
+                        </Link>
+                        <small>{row.chart_number}</small>
+                      </td>
+                      <td>{row.complaint || "—"}</td>
+                      <td>{formatWhen(row.started_at, locale)}<small>{row.provider_name || "—"}</small></td>
+                      <td>
+                        <Link className="button secondary small" href={`/patients/${row.patient_id}/visits/${row.id}`}>
+                          {en ? "Resume" : "繼續"} <ArrowUpRight size={13} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>}
             {!pending.rows.length && (
               <div className="dashboard-empty">
                 <CheckCircle2 size={24} />
@@ -145,10 +124,17 @@ export default async function DashboardPage() {
               </div>
             )}
           </section>
-          <ClinicVolume months={months.rows} locale={locale} />
+
         </div>
         <aside className="dashboard-aside">
-          <ClinicStatus statuses={statuses.rows} locale={locale} />
+      <div className="desk-totals">
+        {metrics.map(([label, value]) => (
+          <section className="panel metric" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </section>
+        ))}
+      </div>
           <section className="panel">
             <div className="panel-heading">
               <h2>{en ? "Recently completed" : "最近完成"}</h2>
@@ -181,6 +167,13 @@ export default async function DashboardPage() {
           </section>
         </aside>
       </div>
+      <details className="desk-activity">
+        <summary>{en ? "Clinic activity" : "診所活動"}</summary>
+        <div className="activity-grid">
+          <ClinicVolume months={months.rows} locale={locale} />
+          <ClinicStatus statuses={statuses.rows} locale={locale} />
+        </div>
+      </details>
     </ClinicShell>
   );
 }
