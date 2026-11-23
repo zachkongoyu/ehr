@@ -73,7 +73,7 @@ try {
   );
   const demo = (
     await db.query(
-      "select id::text from patient where chart_number='DEMO-0101'",
+      "select id::text from patient where chart_number='C204117'",
     )
   ).rows[0];
   const overview = await page("/patients/" + demo.id);
@@ -122,7 +122,7 @@ try {
       "No matching medicines",
     ),
   );
-  assert.ok((await page("/patients?q=SAMPLE-0001")).includes("SAMPLE-0001"));
+  assert.ok((await page("/patients?q=C103285")).includes("C103285"));
   assert.ok(
     !(await page("/patients?q=NO-SUCH-PATIENT")).includes(
       'class="patient-name"',

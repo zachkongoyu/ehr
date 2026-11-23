@@ -733,3 +733,44 @@
   .consult[data-view="map"][data-chart-open] .consult-scrim { display: block; position: fixed; inset: 0; z-index: 40; border: 0; background: #10141859; }
   .consult[data-view="map"] .consult-step-head { max-width: none; }
 }
+
+/* Vitals: last in step 2, collapsed until needed; the header line shows
+   what is already recorded. */
+.vitals-block > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-height: 48px;
+  padding: 4px 0;
+  cursor: pointer;
+  list-style: none;
+  outline: 0;
+}
+.vitals-block > summary::-webkit-details-marker { display: none; }
+.vitals-block > summary::before {
+  content: "+";
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font: 400 18px/1 var(--mono);
+}
+.vitals-block[open] > summary::before { content: "−"; }
+.vitals-block > summary h3 { margin: 0; }
+.vitals-block > summary .vitals-recorded { flex-basis: 100%; padding-left: 38px; color: var(--text-muted); font: 400 13px/1.4 var(--mono); }
+.vitals-block[open] > summary .vitals-recorded { display: none; }
+.vitals-block[open] > summary { margin-bottom: 12px; }
+
+/* Back to the previous step sits at the left of the action bar. */
+.consult-actions .back-step { padding: 0 18px 0 14px; color: var(--ink); }
+@media (max-width: 860px) {
+  .consult-actions .back-step { flex: 0 0 auto; }
+}
+@media (max-width: 600px) {
+  .consult-actions .back-step { flex-basis: 100%; order: 3; min-height: 44px; border: 0; background: transparent; justify-content: flex-start; padding-left: 0; }
+}

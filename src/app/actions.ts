@@ -17,7 +17,7 @@ export async function setLocale(locale: Locale) {
     throw new Error("Invalid language");
   (await cookies()).set("locale", locale, { path: "/", sameSite: "lax" });
 }
-const clinician = "Demo clinician";
+const clinician = "Duty doctor";
 export async function startVisit(patientId: string) {
   if (!/^\d+$/.test(patientId)) throw new Error("Invalid patient");
   const client = await getPool().connect();

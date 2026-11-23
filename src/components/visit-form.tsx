@@ -112,6 +112,7 @@ export function VisitFormCard({
   const en = locale === "en";
   const [stage, setStage] = useState(0);
   const [view, setView] = useState<"note" | "map">("note");
+  const [vitalsOpen, setVitalsOpen] = useState(visit.vitals.length > 0);
   const noteRef = useRef<HTMLElement>(null);
 
   function openStage(index: number, targetId?: string) {
@@ -229,9 +230,9 @@ export function VisitFormCard({
         : vitalCount ? (en ? vitalCount + " vitals recorded" : "已記錄 " + vitalCount + " 項生命表徵")
           : (en ? "Vitals, history, examination" : "生命表徵、病史、檢查"),
       subs: [
-        { id: "vitals", label: c.vitals, onSelect: () => openStage(1, "vitals-heading") },
         { id: "urgency", label: en ? "Urgency" : "緊急程度", onSelect: () => openStage(1, "urgency-review") },
         { id: "history", label: en ? "Focused history" : "重點病史", onSelect: () => openStage(1, "focused-history") },
+        { id: "vitals", label: c.vitals, onSelect: () => openStage(1, "vitals-heading") },
       ],
     },
     {
@@ -626,6 +627,7 @@ export function VisitFormCard({
           onInvalidCapture={(event) => {
             setView("note");
             const input = event.target as HTMLInputElement;
+            if (input.closest(".vitals-block")) setVitalsOpen(true);
             const section = input.closest("section[data-stage]");
             if (section instanceof HTMLElement && section.hidden) {
               event.preventDefault();
@@ -678,49 +680,6 @@ export function VisitFormCard({
               </label>
             </section>
 
-            <section hidden={stage !== 1} data-stage="1" id="visit-vitals" className="consult-section">
-              <div className="section-title">
-                <h3 id="vitals-heading" tabIndex={-1}>{c.vitals}</h3>
-                <span className="tag-optional">{c.optional}</span>
-              </div>
-              <div className="vitals-grid">
-                {Object.entries(vitalDefinitions).map(([key, definition]) => {
-                  const before = lastVitals?.vitals.find((item) => item.code === key);
-                  return (
-                    <div key={key} className="vital-card">
-                      <label htmlFor={"vital-" + key}>{en ? definition.label : definition.zh}</label>
-                      <div className="vital-entry">
-                        <input id={"vital-" + key} type="number" inputMode="decimal" step="any"
-                          min={definition.min} max={definition.max}
-                          value={vitals[key] ?? ""}
-                          onChange={(event) => updateVital(key, event.target.value)} />
-                        <span className="vital-unit">{definition.unit}</span>
-                        <TouchNumber id={"vital-" + key} label={(en ? definition.label : definition.zh) + " (" + definition.unit + ")"}
-                          value={vitals[key] ?? ""} locale={locale} min={definition.min} max={definition.max}
-                          onChange={(value) => updateVital(key, value)} />
-                      </div>
-                      <div className="vital-meta">
-                        {referenceRange(key as Vital) && (
-                          <span>{en ? "Ref" : "參考"} <data>{referenceRange(key as Vital)}</data></span>
-                        )}
-                        {before && <span>{en ? "Last" : "上次"} <data>{before.value}</data></span>}
-                        {vitals[key]?.trim() && referenceFlag(key as Vital, Number(vitals[key])) && (
-                          <strong className="vital-flag" data-flag={referenceFlag(key as Vital, Number(vitals[key]))}>
-                            {referenceFlag(key as Vital, Number(vitals[key])) === "H" ? (en ? "High" : "偏高") : (en ? "Low" : "偏低")}
-                          </strong>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              {chartVisits.length > 0 && (
-                <details className="visit-trends">
-                  <summary>{en ? "Compare previous vitals" : "比較過往生命表徵"}</summary>
-                  <ClinicalTrend visits={chartVisits} locale={locale} />
-                </details>
-              )}
-            </section>
             <section hidden={stage !== 1} data-stage="1" className="consult-section">
               <h3 id="urgency-review" tabIndex={-1}>{en ? "Urgency and complication review" : "緊急程度及併發症評估"}</h3>
               <VisitChoices title={en ? "Clinician’s disposition" : "醫生的處置判斷"}
@@ -798,6 +757,58 @@ export function VisitFormCard({
                 options={en ? ["Improving", "Unchanged", "Worsening"] : ["好轉", "無變化", "惡化"]}
                 value={note.history} onChange={(value) => updateNote("history", value)} />
               {field("history")}{field("examination")}
+            </section>
+            <section hidden={stage !== 1} data-stage="1" id="visit-vitals" className="consult-section">
+              <details className="vitals-block" open={vitalsOpen}
+                onToggle={(event) => setVitalsOpen((event.currentTarget as HTMLDetailsElement).open)}>
+              <summary id="vitals-heading" tabIndex={-1}>
+                <h3>{c.vitals}</h3>
+                <span className="tag-optional">{c.optional}</span>
+                <span className="vitals-recorded">
+                  {vitalCount
+                    ? Object.entries(vitalDefinitions).filter(([key]) => vitals[key]?.trim())
+                      .map(([key, item]) => (en ? item.label : item.zh) + " " + vitals[key]).join(" · ")
+                    : (en ? "None recorded" : "未記錄")}
+                </span>
+              </summary>
+              <div className="vitals-grid">
+                {Object.entries(vitalDefinitions).map(([key, definition]) => {
+                  const before = lastVitals?.vitals.find((item) => item.code === key);
+                  return (
+                    <div key={key} className="vital-card">
+                      <label htmlFor={"vital-" + key}>{en ? definition.label : definition.zh}</label>
+                      <div className="vital-entry">
+                        <input id={"vital-" + key} type="number" inputMode="decimal" step="any"
+                          min={definition.min} max={definition.max}
+                          value={vitals[key] ?? ""}
+                          onChange={(event) => updateVital(key, event.target.value)} />
+                        <span className="vital-unit">{definition.unit}</span>
+                        <TouchNumber id={"vital-" + key} label={(en ? definition.label : definition.zh) + " (" + definition.unit + ")"}
+                          value={vitals[key] ?? ""} locale={locale} min={definition.min} max={definition.max}
+                          onChange={(value) => updateVital(key, value)} />
+                      </div>
+                      <div className="vital-meta">
+                        {referenceRange(key as Vital) && (
+                          <span>{en ? "Ref" : "參考"} <data>{referenceRange(key as Vital)}</data></span>
+                        )}
+                        {before && <span>{en ? "Last" : "上次"} <data>{before.value}</data></span>}
+                        {vitals[key]?.trim() && referenceFlag(key as Vital, Number(vitals[key])) && (
+                          <strong className="vital-flag" data-flag={referenceFlag(key as Vital, Number(vitals[key]))}>
+                            {referenceFlag(key as Vital, Number(vitals[key])) === "H" ? (en ? "High" : "偏高") : (en ? "Low" : "偏低")}
+                          </strong>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {chartVisits.length > 0 && (
+                <details className="visit-trends">
+                  <summary>{en ? "Compare previous vitals" : "比較過往生命表徵"}</summary>
+                  <ClinicalTrend visits={chartVisits} locale={locale} />
+                </details>
+              )}
+              </details>
             </section>
 
             <section hidden={stage !== 2} data-stage="2" id="visit-diagnoses" className="consult-section">
@@ -1024,6 +1035,12 @@ export function VisitFormCard({
           </fieldset>
 
           <div className="consult-actions">
+            {stage > 0 && (
+              <button type="button" className="button secondary back-step" disabled={pending} onClick={() => openStage(stage - 1)}>
+                <ArrowLeft size={18} aria-hidden="true" />
+                {stages[stage - 1]}
+              </button>
+            )}
             {error ? <p className="error-message" role="alert">{error}</p> : <span className="consult-actions-spacer" />}
             <button type="submit" className="button secondary" disabled={pending}>
               {c.saveDraft}

@@ -1,18 +1,18 @@
 -- Fake chart for the sample visit form. Re-running replaces these sample rows only.
--- No real patients. Identity numbers are marked SAMPLE and are not HKIDs.
+-- No real patients. The sample charts carry no identity document numbers.
 --
 -- Dependent question (FHIR enableWhen, same form):
 --   palpitation is a yes/no: "Palpitations today?"
 --   palpitation_duration is a choice: "How long have the palpitations lasted?"
 --   palpitation_duration is enabled only when palpitation = true.
---   SAMPLE-0001 answered no, so the completed response has no palpitation_duration row.
---   SAMPLE-0002 answered yes, so the completed response stores palpitation_duration = this-week.
+--   C103285 answered no, so the completed response has no palpitation_duration row.
+--   C106914 answered yes, so the completed response stores palpitation_duration = this-week.
 --
 -- Medicine withheld because a problem is already on the chart (not enableWhen):
 --   medication_withhold_rule: if an active problem has HKCTT Term ID 7871
 --   (Sick sinus syndrome, nature Diagnosis), do not offer Atenolol on symptom_medicine.
---   SAMPLE-0001 has that active problem, and the visit orders paracetamol, not atenolol.
---   SAMPLE-0002 does not have that problem, and the visit orders atenolol.
+--   C103285 has that active problem, and the visit orders paracetamol, not atenolol.
+--   C106914 does not have that problem, and the visit orders atenolol.
 --
 -- HKCTT terms below are the ones printed in the eHealth editorial guides.
 --   7871 Sick sinus syndrome, nature Diagnosis, ICD-10 I49.5.
@@ -44,26 +44,26 @@ where questionnaire_id in (
 
 delete from public.medication_order
 where patient_id in (
-  select id from public.patient where chart_number like 'SAMPLE-%'
+  select id from public.patient where chart_number in ('C103285', 'C106914')
 );
 
 delete from public.medication_statement
 where patient_id in (
-  select id from public.patient where chart_number like 'SAMPLE-%'
+  select id from public.patient where chart_number in ('C103285', 'C106914')
 );
 
 delete from public.problem
 where patient_id in (
-  select id from public.patient where chart_number like 'SAMPLE-%'
+  select id from public.patient where chart_number in ('C103285', 'C106914')
 );
 
 delete from public.visit
 where patient_id in (
-  select id from public.patient where chart_number like 'SAMPLE-%'
+  select id from public.patient where chart_number in ('C103285', 'C106914')
 );
 
 delete from public.patient
-where chart_number like 'SAMPLE-%';
+where chart_number in ('C103285', 'C106914');
 
 delete from public.questionnaire
 where title = 'Sample visit form'
@@ -86,29 +86,29 @@ insert into public.patient (
   ehr_number
 ) values
   (
-    'SAMPLE-0001',
+    'C103285',
     '陳',
     '大文',
     '陳大文',
-    'other',
-    'SAMPLE-DOC-0001',
+    null,
+    null,
     'male',
     '1972-04-08',
-    '00000001',
-    '100 Sample Street, Kowloon, Hong Kong',
+    null,
+    'Yau Ma Tei, Kowloon',
     null
   ),
   (
-    'SAMPLE-0002',
+    'C106914',
     '李',
     '美玲',
     '李美玲',
-    'other',
-    'SAMPLE-DOC-0002',
+    null,
+    null,
     'female',
     '1990-09-21',
-    '00000002',
-    '200 Sample Street, Kowloon, Hong Kong',
+    null,
+    'Tai Kok Tsui, Kowloon',
     null
   );
 
@@ -130,11 +130,11 @@ select
   'finished',
   timestamptz '2026-11-12 09:00:00+08',
   timestamptz '2026-11-12 09:20:00+08',
-  'Dr Sample',
-  'Sample Clinic, Mong Kok',
+  'Dr Lee Hoi Ying',
+  'Consultation room 1',
   'home'
 from public.patient
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
 insert into public.visit (
   patient_id,
@@ -150,11 +150,11 @@ select
   'finished',
   timestamptz '2026-11-12 10:00:00+08',
   timestamptz '2026-11-12 10:20:00+08',
-  'Dr Sample',
-  'Sample Clinic, Mong Kok',
+  'Dr Lee Hoi Ying',
+  'Consultation room 1',
   'home'
 from public.patient
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 -- Already on the chart before the visit, so the form can see it when it opens.
 insert into public.problem (
@@ -181,7 +181,7 @@ select
   'I49.5',
   'Sick sinus syndrome'
 from public.patient
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
 insert into public.problem (
   patient_id,
@@ -209,7 +209,7 @@ select
   '22343003',
   'Pneumonitis due to fumes AND/OR vapors (disorder)'
 from public.patient
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 -- Level 1: no recognised code. Legitimate on the problem list.
 insert into public.problem (
@@ -226,9 +226,9 @@ select
   'Occasional headache',
   '2026-08-01'
 from public.patient
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
--- What SAMPLE-0001 was already taking, reported by the patient. Not an order.
+-- What C103285 was already taking, reported by the patient. Not an order.
 insert into public.medication_statement (
   patient_id,
   medication_id,
@@ -250,7 +250,7 @@ select
   '2026-06-01'
 from public.patient
 join public.medication on medication.local_code = 'sample-paracetamol-500'
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
 insert into public.questionnaire (title, status, version) values
   ('Sample visit form', 'active', '1');
@@ -386,7 +386,7 @@ where questionnaire.title = 'Sample visit form'
   and questionnaire.version = '1'
   and item.link_id = 'symptom_medicine';
 
--- SAMPLE-0001 answered "no" to palpitations. The duration question stays hidden,
+-- C103285 answered "no" to palpitations. The duration question stays hidden,
 -- so this completed response does not contain link_id palpitation_duration.
 -- Sick sinus syndrome is active, so the medicine ordered is paracetamol.
 insert into public.questionnaire_response (
@@ -403,7 +403,7 @@ select
   'completed',
   timestamptz '2026-11-12 09:10:00+08'
 from public.questionnaire
-join public.patient on patient.chart_number = 'SAMPLE-0001'
+join public.patient on patient.chart_number = 'C103285'
 join public.visit on visit.patient_id = patient.id
 where questionnaire.title = 'Sample visit form'
   and questionnaire.version = '1';
@@ -412,13 +412,13 @@ insert into public.questionnaire_response_item (response_id, link_id, value_bool
 select response.id, 'palpitation', false
 from public.questionnaire_response as response
 join public.patient on patient.id = response.patient_id
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
 insert into public.questionnaire_response_item (response_id, link_id, value_coding)
 select response.id, 'symptom_medicine', 'sample-paracetamol-500'
 from public.questionnaire_response as response
 join public.patient on patient.id = response.patient_id
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
 insert into public.medication_order (
   patient_id,
@@ -442,9 +442,9 @@ select
 from public.patient
 join public.visit on visit.patient_id = patient.id
 join public.medication on medication.local_code = 'sample-paracetamol-500'
-where patient.chart_number = 'SAMPLE-0001';
+where patient.chart_number = 'C103285';
 
--- SAMPLE-0002 answered "yes". palpitation_duration is enabled and stored.
+-- C106914 answered "yes". palpitation_duration is enabled and stored.
 -- No sick sinus syndrome on the chart, so atenolol is ordered.
 insert into public.questionnaire_response (
   questionnaire_id,
@@ -460,7 +460,7 @@ select
   'completed',
   timestamptz '2026-11-12 10:10:00+08'
 from public.questionnaire
-join public.patient on patient.chart_number = 'SAMPLE-0002'
+join public.patient on patient.chart_number = 'C106914'
 join public.visit on visit.patient_id = patient.id
 where questionnaire.title = 'Sample visit form'
   and questionnaire.version = '1';
@@ -469,19 +469,19 @@ insert into public.questionnaire_response_item (response_id, link_id, value_bool
 select response.id, 'palpitation', true
 from public.questionnaire_response as response
 join public.patient on patient.id = response.patient_id
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 insert into public.questionnaire_response_item (response_id, link_id, value_coding)
 select response.id, 'palpitation_duration', 'this-week'
 from public.questionnaire_response as response
 join public.patient on patient.id = response.patient_id
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 insert into public.questionnaire_response_item (response_id, link_id, value_coding)
 select response.id, 'symptom_medicine', 'sample-atenolol-50'
 from public.questionnaire_response as response
 join public.patient on patient.id = response.patient_id
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 insert into public.medication_order (
   patient_id,
@@ -505,6 +505,6 @@ select
 from public.patient
 join public.visit on visit.patient_id = patient.id
 join public.medication on medication.local_code = 'sample-atenolol-50'
-where patient.chart_number = 'SAMPLE-0002';
+where patient.chart_number = 'C106914';
 
 commit;

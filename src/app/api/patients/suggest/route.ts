@@ -44,7 +44,7 @@ export async function GET(request: Request) {
                                          or regexp_replace(coalesce(p.phone,''),'\\D','','g') like '%' || $3 || '%'))
      order by (open_visit.id is not null) desc,
               ($1<>'' and (p.family_name ilike $2 || '%' or p.given_name ilike $2 || '%'
-                           or regexp_replace(p.name_text,'^示例\\s*·\\s*','') ilike $2 || '%')) desc,
+                           or p.name_text ilike $2 || '%')) desc,
               last_visit.started_at desc nulls last, p.id desc
      limit 8`,
     [text, like, digits],
