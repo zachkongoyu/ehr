@@ -7,6 +7,7 @@ import { LocaleProvider } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
 import "./globals.css";
 import "./workspace.css";
+import "./consult.css";
 
 export const dynamic = "force-dynamic";
 
