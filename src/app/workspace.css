@@ -81,3 +81,43 @@ body { font-variant-numeric: tabular-nums; }
 @media (max-width: 600px) {
   .consultation-card .button.small, .panel-heading .text-link { min-height: 44px; }
 }
+
+.visit-index button, .visit-summary button { min-height: 44px; padding: 0 12px; color: var(--brand-dark); font-weight: 600; cursor: pointer; }
+.visit-index button[aria-current] { background: white; border-radius: 6px; box-shadow: inset 0 -3px var(--brand); }
+.form-section[hidden] { display: none; }
+.reasoning-field, .form-section details, .visit-summary { display: block; margin: 16px 0; }
+.form-section summary { cursor: pointer; padding: 10px 0; font-weight: 600; }
+.rule-note { padding: 4px 14px; background: #fff4db; border-radius: 6px; }
+.visit-summary > div { display: grid; grid-template-columns: minmax(100px, 34%) 1fr; align-items: baseline; border-bottom: 1px solid var(--line); }
+.visit-summary button { text-align: start; padding-inline: 0; }
+.visit-summary dd { white-space: pre-line; overflow-wrap: anywhere; }
+.editor-shortcut { display: none; }
+@media (max-width: 1000px) {
+  .editor-shortcut.button { display: inline-flex; margin-bottom: 12px; }
+}
+
+.medicine-trigger, .medicine-choices li button {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: start;
+  color: var(--ink);
+  cursor: pointer;
+}
+.medicine-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #a8bcb2;
+  border-radius: 6px;
+  background: white;
+}
+.medicine-trigger svg { flex-shrink: 0; }
+.medicine-choices { padding: 0 2px; }
+.medicine-choices ul { max-height: 220px; overflow-y: auto; margin: 4px 0 0; padding: 3px; }
+.medicine-choices li { border-bottom: 1px solid var(--line); }
+.medicine-choices li button:hover, .medicine-choices li button[aria-pressed="true"] {
+  background: var(--mint);
+}
+.medicine-choices p { padding: 12px; color: var(--text-muted); }
