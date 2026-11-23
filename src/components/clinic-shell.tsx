@@ -1,9 +1,10 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Search, Cross } from "lucide-react";
+import { Cross } from "lucide-react";
 import { ClinicNav } from "@/components/clinic-nav";
 import { DemoGuide } from "@/components/demo-guide";
 import { NavFeedback } from "@/components/nav-feedback";
+import { PatientFinder } from "@/components/patient-finder";
 import { setLocale } from "@/app/actions";
 import type { Locale } from "@/lib/locale-shared";
 
@@ -42,11 +43,7 @@ export function ClinicShell({
               </button>
             </form>
           </div>
-          <form action="/patients" className="global-search">
-            <Search size={16} aria-hidden="true" />
-            <input name="q" aria-label={locale === "en" ? "Find a patient" : "尋找病人"}
-              placeholder={locale === "en" ? "Find patient" : "尋找病人"} />
-          </form>
+          <PatientFinder locale={locale} />
         </div>
       </header>
       <div className="app-content">
