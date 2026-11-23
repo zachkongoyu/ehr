@@ -169,8 +169,13 @@ export function VisitFormCard({
           </div>
           <span className="status-badge">{c.draft}</span>
         </div>
+        <nav className="visit-index" aria-label={en ? "Visit sections" : "診症部分"}>
+          {(["complaint", "vitals", "consultation", "diagnoses", "prescriptions"] as const).map((part) => (
+            <a href={"#visit-" + part} key={part}>{c[part]}</a>
+          ))}
+        </nav>
         <fieldset disabled={pending} className="document-fields">
-          <section className="form-section">
+          <section id="visit-complaint" className="form-section">
             <div className="section-heading">
               <span className="section-number">01</span>
               <h2>{c.complaint}</h2>
@@ -194,7 +199,7 @@ export function VisitFormCard({
               }}
             />
           </section>
-          <section className="form-section">
+          <section id="visit-vitals" className="form-section">
             <div className="section-heading">
               <span className="section-number">02</span>
               <h2>{c.vitals}</h2>
@@ -223,7 +228,7 @@ export function VisitFormCard({
               ))}
             </div>
           </section>
-          <section className="form-section">
+          <section id="visit-consultation" className="form-section">
             <div className="section-heading">
               <span className="section-number">03</span>
               <h2>{c.consultation}</h2>
@@ -264,7 +269,7 @@ export function VisitFormCard({
                 ))}
             </div>
           </section>
-          <section className="form-section">
+          <section id="visit-diagnoses" className="form-section">
             <div className="section-heading">
               <span className="section-number">04</span>
               <h2>{c.diagnoses}</h2>
@@ -288,7 +293,7 @@ export function VisitFormCard({
               }}
             />
           </section>
-          <section className="form-section">
+          <section id="visit-prescriptions" className="form-section">
             <div className="section-heading">
               <span className="section-number">05</span>
               <h2>{c.prescriptions}</h2>

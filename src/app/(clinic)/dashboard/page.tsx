@@ -63,9 +63,6 @@ export default async function DashboardPage() {
     <ClinicShell locale={locale}>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">
-            {en ? "Your clinic, at a glance" : "診所概況，一目了然"}
-          </span>
           <h1>{en ? "Clinic overview" : "診所總覽"}</h1>
           <p>
             {en
@@ -88,7 +85,6 @@ export default async function DashboardPage() {
       </div>
       <div className="dashboard-grid">
         <div className="dashboard-main">
-          <ClinicVolume months={months.rows} locale={locale} />
           <section className="panel">
             <div className="panel-heading">
               <h2>
@@ -149,6 +145,7 @@ export default async function DashboardPage() {
               </div>
             )}
           </section>
+          <ClinicVolume months={months.rows} locale={locale} />
         </div>
         <aside className="dashboard-aside">
           <ClinicStatus statuses={statuses.rows} locale={locale} />

@@ -88,8 +88,8 @@ export function ClinicShell({
           </Link>
         </header>
         <main id="main" className="workspace">
-          <DemoGuide locale={locale}/>
           {children}
+          <DemoGuide locale={locale} />
         </main>
       </div>
     </div>

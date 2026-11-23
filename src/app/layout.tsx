@@ -6,6 +6,7 @@ import "@fontsource/noto-sans-hk/chinese-hongkong-700.css";
 import { LocaleProvider } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
 import "./globals.css";
+import "./workspace.css";
 
 export const dynamic = "force-dynamic";
 
