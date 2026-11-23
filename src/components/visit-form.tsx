@@ -9,6 +9,7 @@ import { saveVisit } from "@/app/actions";
 import { ClinicalTrend } from "@/components/clinical-trend";
 import { TouchNumber } from "@/components/touch-number";
 import { ConsultRail, type RailArea, type RailState } from "@/components/consult-rail";
+import { ConsultMap, type MapColumn, type MapEdge, type MapNode } from "@/components/consult-map";
 import { VisitChoices } from "@/components/visit-choices";
 import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
@@ -110,9 +111,11 @@ export function VisitFormCard({
   const chartClose = useRef<HTMLButtonElement>(null);
   const en = locale === "en";
   const [stage, setStage] = useState(0);
+  const [view, setView] = useState<"note" | "map">("note");
   const noteRef = useRef<HTMLElement>(null);
 
   function openStage(index: number, targetId?: string) {
+    setView("note");
     setStage(index);
     requestAnimationFrame(() => {
       const target = targetId ? document.getElementById(targetId)
@@ -260,6 +263,196 @@ export function VisitFormCard({
     },
   ];
 
+  // ---------- consultation map model ----------
+  const answerOf = (text: string, prefixes: readonly string[]) => {
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      const prefix = prefixes.find((item) => trimmed.startsWith(item));
+      if (prefix) return trimmed.slice(prefix.length);
+    }
+    return null;
+  };
+  const toArea = (id: string) => "area:" + id;
+  const symptomNodes: MapNode[] = note.complaint.split(" · ").map((item) => item.trim()).filter(Boolean)
+    .map((item, index) => ({
+      id: "symptom:" + index,
+      label: item,
+      state: "done" as const,
+      onSelect: () => openStage(0, "presenting-complaint-heading"),
+    }));
+  const symptomEdges: MapEdge[] = symptomNodes.flatMap((node) => {
+    const area = consultationAreas.find((item) =>
+      [...item.symptomsEn, ...item.symptomsZh].some((term) => term.toLowerCase() === node.label.toLowerCase()));
+    return area && focusedAreas.includes(area) ? [[node.id, toArea(area.id), "link"] as MapEdge] : [];
+  });
+  const chartNodes: MapNode[] = [
+    ...patient.allergies.map((item) => ({
+      id: "allergy:" + item.id,
+      label: item.substance,
+      detail: en ? "Allergy" : "過敏",
+      state: "alert" as const,
+      onSelect: () => setChartOpen(true),
+    })),
+    ...patient.problems.map((item) => ({
+      id: "problem:" + item.id,
+      label: item.description,
+      detail: en ? "Ongoing problem" : "持續健康問題",
+      state: "context" as const,
+      onSelect: () => setChartOpen(true),
+    })),
+    ...(rhythmVisit ? [{
+      id: "prior:" + rhythmVisit.id,
+      label: en ? "Earlier palpitations visit" : "過往心悸診症",
+      detail: rhythmVisit.date,
+      state: "context" as const,
+      onSelect: () => { setPreviousId(rhythmVisit.id); setChartOpen(true); },
+    }] : []),
+  ];
+  const chartEdges: MapEdge[] = palpitations ? [
+    ...(rhythmProblem ? [["problem:" + rhythmProblem.id, toArea("cardiac"), "link"] as MapEdge] : []),
+    ...(rhythmVisit ? [["prior:" + rhythmVisit.id, toArea("cardiac"), "link"] as MapEdge] : []),
+  ] : [];
+  const areaNodes: MapNode[] = linkedAreas.map((area) => ({
+    id: toArea(area.id),
+    label: area.label,
+    detail: area.detail,
+    state: area.state === "attention" ? "open" : "done",
+    onSelect: area.onSelect,
+  }));
+  const notAsked = en ? "Not asked yet" : "尚未查問";
+  const findingNodes: MapNode[] = [];
+  const findingEdges: MapEdge[] = [];
+  const addFinding = (areaId: string, id: string, label: string, answer: string | null) => {
+    findingNodes.push({
+      id, label, detail: answer ?? notAsked, state: answer ? "done" : "open",
+      onSelect: () => openArea(areaId),
+    });
+    findingEdges.push([toArea(areaId), id, "link"]);
+  };
+  for (const area of focusedAreas) {
+    if (area.id === "respiratory") {
+      for (const finding of respiratoryFindings)
+        addFinding("respiratory", "finding:" + finding.en, en ? finding.en : finding.zh,
+          answerOf(note.history, [finding.en + " · ", finding.zh + " · "]));
+    } else if (area.id === "cardiac") {
+      addFinding("cardiac", "finding:started", en ? "Onset" : "開始時間",
+        answerOf(note.history, palpitationPrefixes.started));
+      if (recordedRhythmContext)
+        addFinding("cardiac", "finding:compared", en ? "Compared with prior rhythm" : "與過往心律比較",
+          answerOf(note.history, palpitationPrefixes.compared));
+    } else {
+      const reviewed = ["Reviewed " + area.en.toLowerCase() + " history", "已查問" + area.zh + "病史"];
+      addFinding(area.id, "finding:" + area.id, en ? area.en + " history" : area.zh + "病史",
+        hasLine(note.history, (line) => reviewed.includes(line)) ? (en ? "Reviewed" : "已查問") : null
+    );
+    }
+  }
+  const disposition = answerOf(note.examination, ["Disposition · ", "處置 · "]);
+  const urgencyNode: MapNode = {
+    id: "finding:urgency",
+    label: en ? "Urgency" : "緊急程度",
+    detail: disposition ?? notAsked,
+    state: disposition ? "done" : "open",
+    onSelect: () => openStage(1, "urgency-review"),
+  };
+  const vitalsNode: MapNode = {
+    id: "finding:vitals",
+    label: c.vitals,
+    detail: vitalCount
+      ? Object.entries(vitalDefinitions).filter(([key]) => vitals[key]?.trim()).slice(0, 2)
+        .map(([key, item]) => (en ? item.label : item.zh) + " " + vitals[key]).join(" · ")
+        + (vitalCount > 2 ? (en ? ` +${vitalCount - 2} more` : ` 另 ${vitalCount - 2} 項`) : "")
+      : (en ? "None recorded" : "未記錄"),
+    state: vitalCount ? "done" : "empty",
+    onSelect: () => openStage(1, "vitals-heading"),
+  };
+  const diagnosisLines = diagnoses.split("\n").map((line) => line.trim()).filter(Boolean);
+  const diagnosisNodes: MapNode[] = diagnosisLines.length
+    ? diagnosisLines.map((line, index) => ({
+      id: "dx:" + index, label: line, state: "done" as const, onSelect: () => openStage(2, "diagnoses"),
+    }))
+    : [{
+      id: "dx:none",
+      label: note.assessment.trim() ? (en ? "Assessment recorded" : "已記錄評估") : (en ? "Not recorded" : "未記錄"),
+      detail: note.assessment.trim() ? note.assessment.trim().split("\n")[0].slice(0, 60) : (en ? "Required to complete" : "完成前必填"),
+      state: note.assessment.trim() ? "done" : "empty",
+      onSelect: () => openStage(2, "assessment"),
+    }];
+  const prescribed = prescriptions.map((rx) => medications.find((item) => item.id === rx.medicationId)?.name).filter(Boolean);
+  const planNodes: MapNode[] = [
+    {
+      id: "plan:plan",
+      label: c.plan,
+      detail: note.plan.trim() ? note.plan.trim().split("\n")[0].slice(0, 60) : (en ? "Required to complete" : "完成前必填"),
+      state: note.plan.trim() ? "done" : "empty",
+      onSelect: () => openStage(3, "treatment-heading"),
+    },
+    {
+      id: "plan:rx",
+      label: c.prescriptions,
+      detail: prescriptions.length
+        ? (incompleteRx ? (en ? `${incompleteRx} incomplete` : `${incompleteRx} 項未完成`) : prescribed.join(", "))
+        : withheld.length ? (en ? `None · ${withheld.length} excluded by chart rules` : `沒有 · ${withheld.length} 項被病歷規則排除`)
+          : (en ? "None" : "沒有"),
+      state: prescriptions.length ? (incompleteRx ? "open" : "done") : "empty",
+      onSelect: () => openStage(3, "prescriptions-heading"),
+    },
+    {
+      id: "plan:follow",
+      label: c.followUp,
+      detail: note.followUp.trim() ? note.followUp.trim().split("\n")[0].slice(0, 60) : (en ? "Not recorded" : "未記錄"),
+      state: note.followUp.trim() ? "done" : "empty",
+      onSelect: () => openStage(3, "follow-up-heading"),
+    },
+  ];
+  const answered = [...findingNodes, urgencyNode, vitalsNode].filter((node) => node.state === "done");
+  const evidenceEdges: MapEdge[] = diagnosisNodes[0].state === "done"
+    ? diagnosisNodes.flatMap((dx) => answered.map((node) => [node.id, dx.id, "evidence"] as MapEdge))
+    : [];
+  const planEdges: MapEdge[] = diagnosisNodes[0].state === "done"
+    ? diagnosisNodes.flatMap((dx) => planNodes.filter((node) => node.state !== "empty")
+      .map((node) => [dx.id, node.id, "link"] as MapEdge))
+    : [];
+  const cautionEdges: MapEdge[] = patient.allergies.map((item) => ["allergy:" + item.id, "plan:rx", "caution"] as MapEdge);
+  const mapColumns: MapColumn[] = [
+    {
+      id: "presentation",
+      title: en ? "Presentation" : "就診資料",
+      groups: [
+        {
+          title: en ? "Today" : "今日",
+          nodes: symptomNodes.length ? symptomNodes : [{
+            id: "symptom:none", label: en ? "No symptoms recorded" : "未記錄症狀",
+            state: "empty", onSelect: () => openStage(0, "presenting-complaint-heading"),
+          }],
+        },
+        ...(chartNodes.length ? [{ title: en ? "From the chart" : "病歷資料", nodes: chartNodes }] : []),
+      ],
+    },
+    {
+      id: "areas",
+      title: en ? "Body areas" : "身體範疇",
+      groups: [{
+        nodes: areaNodes.length ? areaNodes : [{
+          id: "area:none", label: en ? "None linked" : "未連結範疇",
+          detail: en ? "Record symptoms to link areas" : "記錄症狀以連結範疇",
+          state: "empty", onSelect: () => openStage(0, "presenting-complaint-heading"),
+        }],
+      }],
+    },
+    {
+      id: "findings",
+      title: en ? "Findings" : "臨床所見",
+      groups: [
+        ...(findingNodes.length ? [{ title: en ? "Focused history" : "重點病史", nodes: findingNodes }] : []),
+        { title: en ? "Assessment" : "評估", nodes: [urgencyNode, vitalsNode] },
+      ],
+    },
+    { id: "diagnosis", title: en ? "Working diagnosis" : "初步診斷", groups: [{ nodes: diagnosisNodes }] },
+    { id: "plan", title: en ? "Plan" : "診療計劃", groups: [{ nodes: planNodes }] },
+  ];
+  const mapEdges: MapEdge[] = [...symptomEdges, ...chartEdges, ...findingEdges, ...evidenceEdges, ...planEdges, ...cautionEdges];
+
   function field(key: keyof Note, label = c[key]) {
     return <label className="reasoning-field" htmlFor={key}>{label}
       <textarea id={key} rows={4} maxLength={20000} value={note[key]}
@@ -384,7 +577,7 @@ export function VisitFormCard({
   const statusText = pending ? c.saving : saved ? c.saved : dirty ? c.unsaved : c.draft;
 
   return (
-    <div className="consult" data-chart-open={chartOpen || undefined}>
+    <div className="consult" data-view={view} data-chart-open={chartOpen || undefined}>
       <header className="consult-bar" aria-label={c.demographics}>
         <Link href={"/patients/" + patient.id} className="consult-back" aria-label={c.back}>
           <ArrowLeft size={22} aria-hidden="true" />
@@ -431,6 +624,7 @@ export function VisitFormCard({
           id="consultation-form"
           className="consult-note"
           onInvalidCapture={(event) => {
+            setView("note");
             const input = event.target as HTMLInputElement;
             const section = input.closest("section[data-stage]");
             if (section instanceof HTMLElement && section.hidden) {
@@ -445,10 +639,19 @@ export function VisitFormCard({
           }}
         >
           <div className="consult-step-head">
-            <span>{en ? `Step ${stage + 1} of ${stages.length}` : `第 ${stage + 1} / ${stages.length} 步`}</span>
-            <h2 tabIndex={-1}>{stages[stage]}</h2>
+            <h2 tabIndex={-1}>{view === "map" ? (en ? "Consultation map" : "診症流程圖") : stages[stage]}</h2>
+            {view === "note" && <span>{en ? `Step ${stage + 1} of ${stages.length}` : `第 ${stage + 1} / ${stages.length} 步`}</span>}
+            <div className="view-switch" role="group" aria-label={en ? "View" : "檢視"}>
+              <button type="button" aria-pressed={view === "note"} onClick={() => setView("note")}>
+                {en ? "Note" : "病歷"}
+              </button>
+              <button type="button" aria-pressed={view === "map"} onClick={() => { setView("map"); window.scrollTo({ top: 0 }); }}>
+                {en ? "Map" : "流程圖"}
+              </button>
+            </div>
           </div>
-          <fieldset disabled={pending} className="consult-fields">
+          {view === "map" && <ConsultMap locale={locale} columns={mapColumns} edges={mapEdges} />}
+          <fieldset disabled={pending} className="consult-fields" hidden={view === "map"}>
 
             <section hidden={stage !== 0} data-stage="0" id="visit-complaint" className="consult-section">
               <div className="section-title">
@@ -799,7 +1002,7 @@ export function VisitFormCard({
                   <p><strong>{en ? "Respiratory questions not asked: " : "未查問的呼吸系統問題："}</strong>
                     {missingFindings.join(en ? ", " : "、")}</p>
                   <button type="button" className="button secondary"
-                    onClick={() => openStage(1, "respiratory-questions")}>{en ? "Ask now" : "現在查問"}</button>
+                    onClick={() => openStage(1)}>{en ? "Ask now" : "現在查問"}</button>
                 </div>
               )}
               <dl className="visit-summary">
