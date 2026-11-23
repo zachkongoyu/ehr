@@ -3,11 +3,15 @@ import "@fontsource/noto-sans-hk/latin-400.css";
 import "@fontsource/noto-sans-hk/latin-700.css";
 import "@fontsource/noto-sans-hk/chinese-hongkong-400.css";
 import "@fontsource/noto-sans-hk/chinese-hongkong-700.css";
+import "@fontsource/source-serif-4/latin-400.css";
+import "@fontsource/source-serif-4/latin-500.css";
+import "@fontsource/noto-serif-hk/500.css";
 import { LocaleProvider } from "@/lib/i18n";
 import { getLocale } from "@/lib/locale";
 import "./globals.css";
 import "./workspace.css";
 import "./consult.css";
+import "./chrome.css";
 
 export const dynamic = "force-dynamic";
 

@@ -1,0 +1,93 @@
+/* App chrome in the editorial direction: warm paper, black ink, serif
+   display type, hairlines instead of filled bars. Loaded last so it
+   overrides the earlier palette layers. */
+
+:root {
+  --ink: #1b1a17;
+  --text-muted: #6a655c;
+  --line: #e3ded3;
+  --brand: #1b1a17;
+  --brand-dark: #000;
+  --paper: #fffdf9;
+  --canvas: #f4f1ea;
+  --mint: #ece8df;
+  --serif: "Source Serif 4", "Noto Serif HK", Georgia, serif;
+}
+body { background: var(--canvas); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+.clinic-masthead {
+  background: var(--paper);
+  color: var(--ink);
+  border-bottom: 1px solid var(--line);
+}
+.desk-wordmark {
+  font: 500 22px/1 var(--serif);
+  letter-spacing: -0.01em;
+}
+.desk-wordmark svg { stroke-width: 1.6; }
+.masthead-inner .nav-link {
+  min-height: 64px;
+  padding: 0 16px;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+.masthead-inner .nav-link svg { stroke-width: 1.6; }
+.masthead-inner .nav-link:hover { background: transparent; color: var(--ink); }
+.masthead-inner .nav-link.current {
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: inset 0 -2px var(--ink);
+}
+.masthead-inner .language-switch {
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+}
+.masthead-inner .language-switch button {
+  min-height: 40px;
+  min-width: 48px;
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.masthead-inner .language-switch button.selected { background: var(--ink); color: var(--paper); }
+.masthead-inner .global-search {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--canvas);
+  color: var(--text-muted);
+}
+.masthead-inner .global-search input { font-size: 15px; background: transparent; }
+
+/* Shared building blocks on the other pages pick up the same voice. */
+.page-heading h1, .patient-heading h1 {
+  font: 400 clamp(30px, 3vw, 40px)/1.15 var(--serif);
+  letter-spacing: -0.015em;
+}
+.panel, .patient-header, .chart-tabs { border-color: var(--line); background: var(--paper); box-shadow: none; }
+.panel-heading { background: transparent; border-color: var(--line); }
+.panel-heading h2 { font: 500 18px/1.3 var(--serif); }
+.button { border-radius: 8px; }
+.button.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.button.primary:hover { background: #000; }
+.button.secondary { background: transparent; border-color: #cfc8ba; color: var(--ink); }
+.patient-table th { background: transparent; color: var(--text-muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+.patient-table tbody tr:hover, .timeline-entry.active { background: #f8f6f0; }
+.desk-totals { background: var(--paper); border-color: var(--line); }
+.desk-totals .metric { background: transparent; }
+.desk-totals .metric strong { font: 400 28px/1.2 var(--serif); }
+.demo-guide { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+.guide-icon { background: var(--paper); color: var(--ink); border: 1px solid var(--line); }
+.guide-intro strong, .guide-toggle { color: var(--ink); }
+.guide-toggle { background: var(--paper); border: 1px solid var(--line); }
+
+@media (max-width: 600px) {
+  .masthead-inner .nav-link { min-height: 52px; padding: 0 6px; font-size: 14px; white-space: nowrap; justify-content: center; }
+  .masthead-inner .nav-link svg { display: none; }
+  .desk-wordmark { font-size: 20px; }
+}

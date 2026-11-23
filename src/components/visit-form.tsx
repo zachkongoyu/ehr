@@ -418,6 +418,10 @@ export function VisitFormCard({
             <li>+{patient.problems.length - shownProblems.length}</li>
           )}
         </ul>
+        <span className={"consult-save" + (saved ? " saved" : dirty ? " dirty" : "")} aria-live="polite" title={c.savedHint}>
+          {saved ? <Check size={16} aria-hidden="true" /> : <Clock3 size={16} aria-hidden="true" />}
+          {statusText}
+        </span>
         <button type="button" className="consult-chart-toggle" aria-expanded={chartOpen}
           aria-controls="visit-reference" onClick={() => setChartOpen(true)}>
           <BookOpen size={20} aria-hidden="true" />
@@ -814,15 +818,7 @@ export function VisitFormCard({
           </fieldset>
 
           <div className="consult-actions">
-            <div className="save-status" aria-live="polite">
-              {error ? (
-                <p className="error-message" role="alert">{error}</p>
-              ) : (
-                <span className={saved ? "saved" : dirty ? "dirty" : undefined} title={c.savedHint}>
-                  {saved ? <Check size={18} /> : <Clock3 size={18} />} {statusText}
-                </span>
-              )}
-            </div>
+            {error ? <p className="error-message" role="alert">{error}</p> : <span className="consult-actions-spacer" />}
             <button type="submit" className="button secondary" disabled={pending}>
               {c.saveDraft}
             </button>
