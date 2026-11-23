@@ -1,93 +1,100 @@
-/* App chrome in the editorial direction: warm paper, black ink, serif
-   display type, hairlines instead of filled bars. Loaded last so it
-   overrides the earlier palette layers. */
+/* "Clinical instrument" direction. Cool neutral surfaces, one petrol
+   accent, IBM Plex Sans for the interface and IBM Plex Mono for every
+   number, ID, date and unit. Panes are divided by 1px rules; no shadows,
+   no gradients, 4px corners on controls. Loaded last. */
 
 :root {
-  --ink: #1b1a17;
-  --text-muted: #6a655c;
-  --line: #e3ded3;
-  --brand: #1b1a17;
-  --brand-dark: #000;
-  --paper: #fffdf9;
-  --canvas: #f4f1ea;
-  --mint: #ece8df;
-  --serif: "Source Serif 4", "Noto Serif HK", Georgia, serif;
+  --ink: #101418;
+  --ink-2: #39424c;
+  --text-muted: #5b6571;
+  --faint: #868f9a;
+  --line: #dde1e6;
+  --rule-strong: #c4cad2;
+  --paper: #ffffff;
+  --canvas: #f3f4f6;
+  --sunken: #f7f8f9;
+  --brand: #075e80;
+  --brand-dark: #054a65;
+  --accent-tint: #e7f1f5;
+  --mint: #e7f1f5;
+  --crit: #b3261e;
+  --crit-tint: #fcecea;
+  --warn: #8f5500;
+  --warn-tint: #fdf3e2;
+  --ok: #2b744a;
+  --ok-tint: #e8f3ec;
+  --sans: "IBM Plex Sans", "Noto Sans HK", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", "Noto Sans HK", ui-monospace, monospace;
 }
-body { background: var(--canvas); color: var(--ink); }
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-
-.clinic-masthead {
-  background: var(--paper);
+body {
+  background: var(--canvas);
   color: var(--ink);
-  border-bottom: 1px solid var(--line);
-}
-.desk-wordmark {
-  font: 500 22px/1 var(--serif);
-  letter-spacing: -0.01em;
-}
-.desk-wordmark svg { stroke-width: 1.6; }
-.masthead-inner .nav-link {
-  min-height: 64px;
-  padding: 0 16px;
-  color: var(--text-muted);
+  font-family: var(--sans);
   font-size: 15px;
-  font-weight: 500;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }
-.masthead-inner .nav-link svg { stroke-width: 1.6; }
-.masthead-inner .nav-link:hover { background: transparent; color: var(--ink); }
-.masthead-inner .nav-link.current {
-  background: transparent;
-  color: var(--ink);
-  font-weight: 600;
-  box-shadow: inset 0 -2px var(--ink);
-}
-.masthead-inner .language-switch {
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: transparent;
-}
-.masthead-inner .language-switch button {
-  min-height: 40px;
-  min-width: 48px;
-  border-radius: 6px;
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+svg { stroke-width: 1.75; }
+
+/* ---------- masthead ---------- */
+.clinic-masthead { background: var(--paper); color: var(--ink); border-bottom: 1px solid var(--line); }
+.masthead-inner { min-height: 56px; }
+.desk-wordmark { gap: 8px; font: 600 16px/1 var(--sans); letter-spacing: -0.01em; color: var(--ink); }
+.desk-wordmark svg { color: var(--brand); }
+.masthead-inner .nav-link {
+  min-height: 56px;
+  padding: 0 14px;
   color: var(--text-muted);
   font-size: 14px;
+  font-weight: 500;
+}
+.masthead-inner .nav-link svg { width: 16px; height: 16px; }
+.masthead-inner .nav-link:hover { background: transparent; color: var(--ink); }
+.masthead-inner .nav-link.current { background: transparent; color: var(--ink); font-weight: 600; box-shadow: inset 0 -2px var(--brand); }
+.masthead-inner .language-switch { padding: 2px; border: 1px solid var(--line); border-radius: 4px; background: var(--paper); }
+.masthead-inner .language-switch button {
+  min-height: 40px;
+  min-width: 46px;
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 .masthead-inner .language-switch button.selected { background: var(--ink); color: var(--paper); }
 .masthead-inner .global-search {
-  min-height: 48px;
+  min-height: 44px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--canvas);
+  border-radius: 4px;
+  background: var(--sunken);
   color: var(--text-muted);
 }
-.masthead-inner .global-search input { font-size: 15px; background: transparent; }
+.masthead-inner .global-search input { font-size: 14px; background: transparent; }
 
-/* Shared building blocks on the other pages pick up the same voice. */
+/* ---------- shared pieces on the pages not yet rebuilt ---------- */
 .page-heading h1, .patient-heading h1 {
-  font: 400 clamp(30px, 3vw, 40px)/1.15 var(--serif);
+  font: 600 26px/1.25 var(--sans);
   letter-spacing: -0.015em;
 }
-.panel, .patient-header, .chart-tabs { border-color: var(--line); background: var(--paper); box-shadow: none; }
+.panel, .patient-header, .chart-tabs { border-color: var(--line); border-radius: 6px; background: var(--paper); box-shadow: none; }
 .panel-heading { background: transparent; border-color: var(--line); }
-.panel-heading h2 { font: 500 18px/1.3 var(--serif); }
-.button { border-radius: 8px; }
-.button.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.button.primary:hover { background: #000; }
-.button.secondary { background: transparent; border-color: #cfc8ba; color: var(--ink); }
-.patient-table th { background: transparent; color: var(--text-muted); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
-.patient-table tbody tr:hover, .timeline-entry.active { background: #f8f6f0; }
-.desk-totals { background: var(--paper); border-color: var(--line); }
+.panel-heading h2 { font: 600 15px/1.35 var(--sans); }
+.button { border-radius: 4px; font-weight: 500; box-shadow: none; }
+.button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.button.primary:hover { background: var(--brand-dark); }
+.button.secondary { background: var(--paper); border-color: var(--rule-strong); color: var(--ink); }
+.patient-table th { background: var(--sunken); color: var(--text-muted); font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.patient-table tbody tr:hover, .timeline-entry.active { background: var(--sunken); }
+.desk-totals { background: var(--paper); border-color: var(--line); border-radius: 6px; }
 .desk-totals .metric { background: transparent; }
-.desk-totals .metric strong { font: 400 28px/1.2 var(--serif); }
-.demo-guide { background: transparent; border: 1px solid var(--line); color: var(--ink); }
-.guide-icon { background: var(--paper); color: var(--ink); border: 1px solid var(--line); }
+.desk-totals .metric strong { font: 500 22px/1.2 var(--mono); }
+.demo-guide { background: var(--paper); border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
+.guide-icon { background: var(--sunken); color: var(--brand); border: 1px solid var(--line); border-radius: 4px; }
 .guide-intro strong, .guide-toggle { color: var(--ink); }
-.guide-toggle { background: var(--paper); border: 1px solid var(--line); }
+.guide-toggle { background: var(--paper); border: 1px solid var(--line); border-radius: 4px; }
+.status-badge { border-radius: 3px; }
 
 @media (max-width: 600px) {
-  .masthead-inner .nav-link { min-height: 52px; padding: 0 6px; font-size: 14px; white-space: nowrap; justify-content: center; }
+  .masthead-inner .nav-link { min-height: 48px; padding: 0 6px; font-size: 14px; white-space: nowrap; justify-content: center; }
   .masthead-inner .nav-link svg { display: none; }
-  .desk-wordmark { font-size: 20px; }
 }

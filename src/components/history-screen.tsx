@@ -9,6 +9,7 @@ import { clinicCopy } from "@/lib/clinic-copy";
 import { t } from "@/lib/copy";
 import { ageFrom } from "@/lib/age";
 import { vitalDefinitions } from "@/lib/consultation";
+import { referenceFlag, referenceRange } from "@/lib/vital-reference";
 import type { Locale } from "@/lib/locale-shared";
 import type { PatientChart } from "@/lib/chart";
 
@@ -41,7 +42,9 @@ export function HistoryScreen({
     : selectedId
       ? "clinical"
       : "overview";
-  const latestVitals = patient.visits.find((visit) => visit.vitals.length);
+  const vitalVisits = patient.visits.filter((visit) => visit.vitals.length);
+  const latestVitals = vitalVisits[0];
+  const previousVitals = vitalVisits[1];
   const latest = patient.visits[0];
   const status = (value: string) =>
     value === "in-progress"
@@ -178,17 +181,39 @@ export function HistoryScreen({
                 <section className="chart-card">
                   <div className="card-head">
                     <h2>{en ? "Latest recorded vitals" : "最近生命表徵"}</h2>
-                    {latestVitals && <span className="card-meta">{latestVitals.date}</span>}
+                    {latestVitals && <span className="card-meta">{latestVitals.date}{previousVitals ? (en ? " · previous " : " · 上次 ") + previousVitals.date : ""}</span>}
                   </div>
                   {latestVitals ? (
-                    <dl className="chart-readings">
-                      {latestVitals.vitals.map((item) => (
-                        <div key={item.code}>
-                          <dt>{en ? vitalDefinitions[item.code].label : vitalDefinitions[item.code].zh}</dt>
-                          <dd>{item.value} <small>{item.unit}</small></dd>
-                        </div>
-                      ))}
-                    </dl>
+                    <div className="table-scroll">
+                      <table className="results-table">
+                        <thead>
+                          <tr>
+                            <th>{en ? "Measure" : "項目"}</th>
+                            <th className="num">{en ? "Result" : "結果"}</th>
+                            <th>{en ? "Unit" : "單位"}</th>
+                            <th className="num">{en ? "Adult ref." : "成人參考"}</th>
+                            <th>{en ? "Flag" : "標示"}</th>
+                            <th className="num">{en ? "Previous" : "上次"}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {latestVitals.vitals.map((item) => {
+                            const flag = referenceFlag(item.code, item.value);
+                            const before = previousVitals?.vitals.find((prior) => prior.code === item.code);
+                            return (
+                              <tr key={item.code} data-flag={flag || undefined}>
+                                <th scope="row">{en ? vitalDefinitions[item.code].label : vitalDefinitions[item.code].zh}</th>
+                                <td className="num result">{item.value}</td>
+                                <td className="unit">{item.unit}</td>
+                                <td className="num ref">{referenceRange(item.code) ?? "—"}</td>
+                                <td>{flag && <span className="flag" data-flag={flag}>{flag}</span>}</td>
+                                <td className="num prev">{before ? before.value : "—"}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
                     <p className="empty-copy">{en ? "No vitals recorded." : "尚未記錄生命表徵。"}</p>
                   )}

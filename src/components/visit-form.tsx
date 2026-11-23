@@ -16,12 +16,14 @@ import { consultationAreas } from "@/lib/consultation-areas";
 import { clinicCopy } from "@/lib/clinic-copy";
 import { t } from "@/lib/copy";
 import { ageFrom } from "@/lib/age";
+import { referenceFlag, referenceRange } from "@/lib/vital-reference";
 import {
   vitalDefinitions,
   vitalKey,
   type Consultation,
   type Note,
   type Prescription,
+  type Vital,
 } from "@/lib/consultation";
 import type { PatientChart, VisitView } from "@/lib/chart";
 import type { Locale } from "@/lib/locale-shared";
@@ -494,7 +496,17 @@ export function VisitFormCard({
                           value={vitals[key] ?? ""} locale={locale} min={definition.min} max={definition.max}
                           onChange={(value) => updateVital(key, value)} />
                       </div>
-                      {before && <small>{en ? "Last" : "上次"} {before.value} · {lastVitals.date}</small>}
+                      <div className="vital-meta">
+                        {referenceRange(key as Vital) && (
+                          <span>{en ? "Ref" : "參考"} <data>{referenceRange(key as Vital)}</data></span>
+                        )}
+                        {before && <span>{en ? "Last" : "上次"} <data>{before.value}</data></span>}
+                        {vitals[key]?.trim() && referenceFlag(key as Vital, Number(vitals[key])) && (
+                          <strong className="vital-flag" data-flag={referenceFlag(key as Vital, Number(vitals[key]))}>
+                            {referenceFlag(key as Vital, Number(vitals[key])) === "H" ? (en ? "High" : "偏高") : (en ? "Low" : "偏低")}
+                          </strong>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
