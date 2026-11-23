@@ -2,7 +2,6 @@ import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { ClinicShell } from "@/components/clinic-shell";
 import { ClinicVolume } from "@/components/clinic-volume";
-import { PatientFinder } from "@/components/patient-finder";
 import { getPool } from "@/lib/db";
 import { getLocale } from "@/lib/locale";
 import { displayName } from "@/lib/copy";
@@ -86,7 +85,6 @@ export default async function DashboardPage() {
             <h1>{en ? "Clinic overview" : "診所總覽"}</h1>
             <p><time>{today}</time> · {en ? "Hong Kong time" : "香港時間"}</p>
           </div>
-          <div className="desk-find"><PatientFinder locale={locale} variant="page" /></div>
           <Link className="button primary" href="/patients">
             <Plus size={18} aria-hidden="true" />
             {en ? "Start consultation" : "開始診症"}

@@ -11,7 +11,7 @@ import type { Locale } from "@/lib/locale-shared";
 // digits of a chart or phone number narrow the list as you type. One tap
 // opens the patient: their open consultation if there is one, otherwise
 // their chart.
-export function PatientFinder({ locale, variant = "bar" }: { locale: Locale; variant?: "bar" | "page" }) {
+export function PatientFinder({ locale }: { locale: Locale }) {
   const en = locale === "en";
   const router = useRouter();
   const id = useId();
@@ -59,10 +59,11 @@ export function PatientFinder({ locale, variant = "bar" }: { locale: Locale; var
   }
 
   const sex = (value: string) => value === "female" ? (en ? "F" : "女") : value === "male" ? (en ? "M" : "男") : "—";
-  const heading = text ? (en ? "Matching patients" : "相符病人") : (en ? "Open consultations and recent patients" : "未完成診症及最近病人");
+  const heading = text ? (en ? "Matching patients" : "相符病人")
+    : (en ? "Open consultations and recent patients · type a name, chart or phone number" : "未完成診症及最近病人 · 可輸入姓名、病歷編號或電話");
 
   return (
-    <div className={"patient-finder finder-" + variant} ref={box} data-open={open || undefined}>
+    <div className="patient-finder" ref={box} data-open={open || undefined}>
       <div className="finder-field">
         <Search size={18} aria-hidden="true" />
         <input
@@ -75,9 +76,7 @@ export function PatientFinder({ locale, variant = "bar" }: { locale: Locale; var
           aria-autocomplete="list"
           autoComplete="off"
           enterKeyHint="go"
-          placeholder={variant === "page"
-            ? (en ? "Find patient: name, chart or phone" : "尋找病人：姓名、病歷編號或電話")
-            : (en ? "Find patient" : "尋找病人")}
+          placeholder={en ? "Find patient" : "尋找病人"}
           aria-label={en ? "Find patient" : "尋找病人"}
           value={text}
           onFocus={() => setOpen(true)}

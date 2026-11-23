@@ -10,7 +10,7 @@
 
 .desk-head {
   display: grid;
-  grid-template-columns: auto minmax(280px, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px 28px;
   padding: 20px 32px;
@@ -20,7 +20,6 @@
 .desk-head h1 { font: 600 24px/1.25 var(--sans); letter-spacing: -0.015em; }
 .desk-head p { margin-top: 2px; color: var(--text-muted); font-size: 13px; }
 .desk-head p time { font-size: 13px; }
-.desk-find { max-width: 640px; }
 .desk-head .button { min-height: 52px; padding: 0 20px; font-size: 15px; font-weight: 600; }
 
 /* figures */
@@ -126,10 +125,6 @@
 .desk-recent time { color: var(--text-muted); font-size: 12px; }
 
 /* ---------- tablet portrait and phones ---------- */
-@media (max-width: 1100px) {
-  .desk-head { grid-template-columns: 1fr auto; }
-  .desk-find { grid-column: 1 / -1; grid-row: 2; max-width: none; }
-}
 @media (max-width: 1024px) {
   .desk-body { grid-template-columns: minmax(0, 1fr); }
   .desk-side { display: grid; grid-template-columns: 1fr 1fr; border-left: 0; }

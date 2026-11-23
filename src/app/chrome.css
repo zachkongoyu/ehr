@@ -142,3 +142,11 @@ html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 @media (prefers-reduced-motion: reduce) {
   .nav-progress[data-active] { animation: none; transform: scaleX(0.6); }
 }
+
+/* The single patient search lives in the top bar on every page. */
+@media (min-width: 901px) {
+  .masthead-inner { grid-template-columns: auto 1fr auto minmax(280px, 420px); }
+}
+@media (max-width: 900px) {
+  .masthead-inner .patient-finder { grid-column: 2; grid-row: 1; margin-block: 6px; }
+}

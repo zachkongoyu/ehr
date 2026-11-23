@@ -16,7 +16,6 @@
 }
 .worklist-head h1 { font: 600 24px/1.25 var(--sans); letter-spacing: -0.015em; }
 .worklist-head .button { min-height: 48px; padding: 0 18px; font-size: 15px; font-weight: 600; }
-.worklist-find { padding: 16px 32px 4px; background: var(--paper); }
 
 /* status tabs with counts */
 .worklist-status {
@@ -120,7 +119,6 @@
 }
 .finder-field input::-webkit-search-cancel-button { display: none; }
 .finder-clear { display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 4px; background: transparent; color: var(--text-muted); }
-.finder-page .finder-field { min-height: 56px; padding-left: 16px; }
 .finder-page .patient-finder .finder-field input[type="search"][role] { min-height: 54px; font-size: 18px; }
 
 .finder-popup {
@@ -167,7 +165,6 @@
 .finder-action { grid-area: action; padding: 6px 10px; border: 1px solid var(--line); border-radius: 4px; color: var(--ink); font-size: 13px; font-weight: 500; white-space: nowrap; }
 .finder-action.resume { border-color: var(--brand); background: var(--brand); color: #fff; }
 .finder-empty { padding: 4px 16px 16px; color: var(--text-muted); font-size: 14px; }
-.finder-page .finder-popup { width: 100%; max-height: min(64vh, 620px); }
 
 /* ---------- tablet portrait and phones ---------- */
 @media (max-width: 1024px) {
@@ -175,7 +172,7 @@
   .visit-reason { display: none; }
 }
 @media (max-width: 640px) {
-  .worklist-head, .worklist-status, .worklist-find, .worklist-results { padding-inline: 16px; }
+  .worklist-head, .worklist-status, .worklist-results { padding-inline: 16px; }
   .worklist-head { flex-wrap: wrap; }
   .worklist-head .button { width: 100%; }
   .visit-rows a { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding-inline: 0; }
@@ -184,5 +181,3 @@
   .clinic-masthead .finder-popup { position: fixed; top: 112px; left: 12px; right: 12px; width: auto; }
 }
 
-/* Pages with the large search (dashboard, consultations) don't repeat it in the top bar. */
-.clinic-app:has(.finder-page) .clinic-masthead .patient-finder { visibility: hidden; }
