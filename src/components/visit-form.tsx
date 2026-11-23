@@ -5,6 +5,7 @@ import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
 import { ClinicalTrend } from "@/components/clinical-trend";
 import { TouchNumber } from "@/components/touch-number";
+import { VisitDecisionPath } from "@/components/visit-decision-path";
 import { VisitChoices } from "@/components/visit-choices";
 import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
@@ -108,6 +109,9 @@ export function VisitFormCard({
     requestAnimationFrame(() => {
       const target = targetId ? document.getElementById(targetId)
         : indexRef.current?.querySelector<HTMLButtonElement>('[aria-current="step"]');
+      if (target instanceof HTMLElement && target.tagName === "SUMMARY" && target.parentElement instanceof HTMLDetailsElement) {
+        target.parentElement.open = true;
+      }
       target?.focus({ preventScroll: true });
       (targetId ? target : indexRef.current)?.scrollIntoView({ block: "nearest" });
     });
@@ -115,7 +119,10 @@ export function VisitFormCard({
   const stages = en ? ["Patient story", "Findings", "Working diagnosis", "Care plan", "Review"]
     : ["就診原因", "臨床所見", "初步診斷", "診療計劃", "覆核"];
   const available = medications.filter((medicine) => !withheld.some((rule) => rule.id === medicine.id));
-  const respiratory = note.complaint.split(" · ").some((item) => ["Cough", "Sore throat", "咳嗽", "喉嚨痛"].includes(item.trim()));
+  const complaintTokens = note.complaint.split(" · ").map((item) => item.trim().toLocaleLowerCase());
+  const respiratory = complaintTokens.some((item) => ["cough", "sore throat", "咳嗽", "喉嚨痛"].includes(item));
+  const palpitations = complaintTokens.some((item) => item === "palpitations" || item === "心悸");
+  const general = Boolean(note.complaint.trim()) && !respiratory && !palpitations;
   const respiratoryFindings = en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"];
   const recordedHistory = note.history.split("\n").map((line) => line.trim());
   const missingFindings = (respiratory ? respiratoryFindings : []).filter((finding) =>
@@ -135,7 +142,7 @@ export function VisitFormCard({
         onChange={(event) => updateNote(key, event.target.value)} />
     </label>;
   }
-  const symptoms = en ? ["Cough", "Fever", "Sore throat", "Headache"] : ["咳嗽", "發燒", "喉嚨痛", "頭痛"];
+  const symptoms = en ? ["Cough", "Fever", "Sore throat", "Headache", "Palpitations"] : ["咳嗽", "發燒", "喉嚨痛", "頭痛", "心悸"];
   const dxChoices = en ? ["Upper respiratory infection", "Allergic rhinitis", "Hypertension"] : ["上呼吸道感染", "過敏性鼻炎", "高血壓"];
   function updateNote(field: keyof Note, value: string) {
     setNote({ ...note, [field]: value });
@@ -277,7 +284,7 @@ export function VisitFormCard({
           ))}
         </nav>
         <fieldset disabled={pending} className="document-fields">
-          {missingFindings.length > 0 && (stage === 0 || stage === 4) && (
+          {missingFindings.length > 0 && stage === 4 && (
             <section className="visit-prompt" aria-label={en ? "Suggested findings" : "建議查問"}>
               <div>
                 <strong>{en ? "Respiratory questions to review" : "待覆核的呼吸系統問題"}</strong>
@@ -312,6 +319,31 @@ export function VisitFormCard({
                 changed();
               }}
             />
+            <VisitDecisionPath locale={locale} onAssessment={() => openStage(2)} branches={[
+              {
+                id: "respiratory",
+                label: en ? "Respiratory questions" : "呼吸系統問題",
+                detail: respiratory && missingFindings.length === 0
+                  ? en ? "Questions recorded" : "問題已記錄"
+                  : en ? "Breathlessness and chest pain" : "呼吸困難及胸痛",
+                active: respiratory,
+                onSelect: () => openStage(1, "respiratory-questions"),
+              },
+              {
+                id: "palpitations",
+                label: en ? "Palpitations history" : "心悸病史",
+                detail: en ? "Timing and duration" : "開始時間及持續時間",
+                active: palpitations,
+                onSelect: () => openStage(1, "palpitation-questions"),
+              },
+              {
+                id: "general",
+                label: en ? "General history" : "一般病史",
+                detail: en ? "Symptom course and examination" : "病程及檢查",
+                active: general,
+                onSelect: () => openStage(1, "focused-history"),
+              },
+            ]} />
           </section>
           <section hidden={stage !== 1} id="visit-vitals" className="form-section">
             <div className="section-heading">
@@ -346,7 +378,7 @@ export function VisitFormCard({
             )}
           </section>
           <section hidden={stage !== 1} className="form-section">
-            <h2>{en ? "Focused history and examination" : "重點病史及檢查"}</h2>
+            <h2 id="focused-history" tabIndex={-1}>{en ? "Focused history and examination" : "重點病史及檢查"}</h2>
             <details key={String(respiratory)} open={respiratory || undefined}>
               <summary id="respiratory-questions">{en ? "Respiratory symptoms" : "呼吸系統症狀"}</summary>
               {respiratoryFindings.map((finding) => (
@@ -355,6 +387,13 @@ export function VisitFormCard({
                   value={note.history} onChange={(value) => updateNote("history", value)} />
               ))}
             </details>
+            <details key={"palpitations-" + String(palpitations)} open={palpitations || undefined}>
+              <summary id="palpitation-questions">{en ? "Palpitations" : "心悸"}</summary>
+              <VisitChoices title={en ? "When did the palpitations start?" : "心悸何時開始？"}
+                prefix={en ? "Palpitations started · " : "心悸開始 · "} exclusive
+                options={en ? ["Today", "This week", "More than one week ago"] : ["今天", "本週", "一週前"]}
+                value={note.history} onChange={(value) => updateNote("history", value)} />
+            </details>
             <VisitChoices title={en ? "Symptom course" : "症狀變化"} prefix={en ? "Course · " : "病程 · "} exclusive
               options={en ? ["Improving", "Unchanged", "Worsening"] : ["好轉", "無變化", "惡化"]}
               value={note.history} onChange={(value) => updateNote("history", value)} />
@@ -362,6 +401,16 @@ export function VisitFormCard({
           </section>
           <section hidden={stage !== 2} id="visit-diagnoses" className="form-section">
             <h2>{stages[2]}</h2>
+            <VisitChoices title={en ? "Body system under consideration" : "考慮涉及的身體系統"}
+              prefix={en ? "Body system · " : "身體系統 · "}
+              options={en ? ["Respiratory", "Cardiovascular", "Digestive", "Neurological", "Musculoskeletal"]
+                : ["呼吸系統", "心血管系統", "消化系統", "神經系統", "肌肉骨骼系統"]}
+              value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
+            <VisitChoices title={en ? "Possible mechanism" : "可能的病理機制"}
+              prefix={en ? "Possible mechanism · " : "可能機制 · "}
+              options={en ? ["Infection", "Inflammation", "Trauma", "Neoplasm"]
+                : ["感染", "發炎", "創傷", "腫瘤"]}
+              value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
             <VisitChoices title={en ? "Diagnostic uncertainty" : "診斷不確定性"}
               options={en ? ["Cause remains uncertain"] : ["病因尚未確定"]}
               value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
