@@ -95,3 +95,29 @@ body { font-variant-numeric: tabular-nums; }
 @media (max-width: 1000px) {
   .editor-shortcut.button { display: inline-flex; margin-bottom: 12px; }
 }
+
+.medicine-trigger, .medicine-choices li button {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: start;
+  color: var(--ink);
+  cursor: pointer;
+}
+.medicine-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #a8bcb2;
+  border-radius: 6px;
+  background: white;
+}
+.medicine-trigger svg { flex-shrink: 0; }
+.medicine-choices { padding: 0 2px; }
+.medicine-choices ul { max-height: 220px; overflow-y: auto; margin: 4px 0 0; padding: 3px; }
+.medicine-choices li { border-bottom: 1px solid var(--line); }
+.medicine-choices li button:hover, .medicine-choices li button[aria-pressed="true"] {
+  background: var(--mint);
+}
+.medicine-choices p { padding: 12px; color: var(--text-muted); }

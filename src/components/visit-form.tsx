@@ -128,6 +128,11 @@ export function VisitFormCard({
   }
   async function save(intent: Consultation["intent"]) {
     if (pending) return;
+    if (prescriptions.some((item) => !item.medicationId)) {
+      setError(en ? "Choose a medicine or remove the empty prescription." : "請選擇藥物或移除空白處方。");
+      openStage(3);
+      return;
+    }
     if (intent === "complete" && !window.confirm(c.completeConfirm)) return;
     setPending(true);
     setError(null);
@@ -332,8 +337,7 @@ export function VisitFormCard({
               {prescriptions.map((item, index) => (
                 <div className="prescription-entry" key={index}>
                   <div className="prescription-top">
-                    <label htmlFor={"medicine-" + index}>
-                      {c.medicine}
+                    <div>
                       <MedicinePicker
                         id={"medicine-" + index}
                         value={item.medicationId}
@@ -348,7 +352,7 @@ export function VisitFormCard({
                           changed();
                         }}
                       />
-                    </label>
+                    </div>
                     {withheld.some((rule) => rule.id === item.medicationId) && <span role="alert">{withheld.find((rule) => rule.id === item.medicationId)?.name} · {c.blocked}</span>}
                     <button
                       type="button"
