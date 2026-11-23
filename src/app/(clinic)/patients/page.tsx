@@ -74,10 +74,10 @@ export default async function PatientsPage({
                         <strong>{patient.name}</strong>
                       </Link>
                     </td>
-                    <td className="mono">{patient.chart_number}</td>
-                    <td>{patient.birth_date}</td>
-                    <td>{patient.phone || "—"}</td>
-                    <td>
+                    <td className="mono" data-label={c.chartNumber}>{patient.chart_number}</td>
+                    <td data-label={c.birthDate}>{patient.birth_date}</td>
+                    <td data-label={c.phone}>{patient.phone || "—"}</td>
+                    <td data-label={c.lastVisit}>
                       {formatWhen(patient.last_visit, locale)}
                       {patient.open_visit && (
                         <span className="status-badge">{c.draft}</span>
