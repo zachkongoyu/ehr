@@ -24,11 +24,11 @@ export function ClinicalTrend({
       name: en ? "Blood pressure" : "血壓",
       unit: "mmHg",
       series: [
-        { id: "systolic", name: en ? "Systolic" : "收縮壓", color: "#3275f6" },
+        { id: "systolic", name: en ? "Systolic" : "收縮壓", color: "#1b1a17" },
         {
           id: "diastolic",
           name: en ? "Diastolic" : "舒張壓",
-          color: "#9cbcff",
+          color: "#a8a194",
         },
       ],
     },
@@ -37,14 +37,14 @@ export function ClinicalTrend({
       name: en ? "Weight" : "體重",
       unit: "kg",
       series: [
-        { id: "weight", name: en ? "Weight" : "體重", color: "#3275f6" },
+        { id: "weight", name: en ? "Weight" : "體重", color: "#1b1a17" },
       ],
     },
     {
       id: "pulse",
       name: en ? "Pulse" : "脈搏",
       unit: "/min",
-      series: [{ id: "pulse", name: en ? "Pulse" : "脈搏", color: "#3275f6" }],
+      series: [{ id: "pulse", name: en ? "Pulse" : "脈搏", color: "#1b1a17" }],
     },
   ];
   const choice = choices.find((item) => item.id === metric)!;

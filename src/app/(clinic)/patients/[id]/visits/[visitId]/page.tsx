@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { ClinicShell } from "@/components/clinic-shell";
-import { PatientHeader, ChartContext } from "@/components/chart-context";
+import { ChartContext } from "@/components/chart-context";
 import { VisitFormCard } from "@/components/visit-form";
 import { loadHistory, listMedications } from "@/lib/chart";
 import { getLocale } from "@/lib/locale";
@@ -27,11 +27,6 @@ export default async function VisitFormPage({
     redirect("/patients/" + id + "?visit=" + visitId);
   return (
     <ClinicShell locale={locale}>
-      <PatientHeader patient={patient} locale={locale} mode="consultation" />
-      <a className="chart-context-shortcut" href="#visit-reference">
-        {locale === "en" ? "Allergies and chart context" : "過敏及病歷資料"}
-        {patient.allergies.length > 0 && ` (${patient.allergies.length})`}
-      </a>
       <VisitFormCard
         locale={locale}
         patient={patient}

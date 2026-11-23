@@ -218,7 +218,7 @@ try {
   const restored = await page(visitPath);
   assert.ok(restored.includes("Choose medicine"));
   assert.ok(restored.includes("Metformin 850 mg tablet"));
-  assert.ok(restored.includes("route-suggestions"));
+  assert.ok(restored.includes("route-choices"));
   assert.equal(
     (await db.query("select status from visit where id=$1", [visitId])).rows[0]
       .status,

@@ -1,0 +1,617 @@
+/* Consultation workstation: patient banner over three full-height panes
+   (steps, note, chart) divided by rules. Tablet-first: controls are at
+   least 44px, nothing depends on hover. Tokens come from chrome.css. */
+
+.consult {
+  --c-bar-h: 64px;
+  --c-tap: 48px;
+  color: var(--ink);
+  font-size: 15px;
+}
+.workspace:has(> .consult) { max-width: none; padding: 0; }
+.workspace:has(> .consult) > .demo-guide { margin: 24px; }
+.consult data, .consult time { font-family: var(--mono); }
+
+/* ---------- patient banner ---------- */
+.consult-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: var(--c-bar-h);
+  padding: 8px 20px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.consult-back {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  color: var(--ink);
+}
+.consult-who { flex: none; min-width: 0; display: flex; align-items: baseline; gap: 14px; }
+.consult-who h1 { font: 600 18px/1.25 var(--sans); letter-spacing: -0.01em; white-space: nowrap; }
+.consult-who p { display: flex; gap: 12px; color: var(--text-muted); font: 400 13px/1.4 var(--mono); white-space: nowrap; }
+.consult-flags {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--line);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.consult-flags li {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--sunken);
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.consult-flags .flag-allergy { border-color: #efc3bf; background: var(--crit-tint); color: var(--crit); font-weight: 600; }
+.consult-flags .flag-quiet { border-color: transparent; background: transparent; color: var(--text-muted); font-weight: 400; padding-inline: 0 6px; }
+.consult-save {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.consult-save.saved { color: var(--ok); }
+.consult-save.dirty { color: var(--warn); }
+.consult-chart-toggle {
+  flex: none;
+  display: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 500;
+}
+
+/* ---------- panes ---------- */
+.consult-grid {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 340px;
+  min-height: calc(100vh - var(--c-bar-h));
+}
+.consult-rail, .consult-chart {
+  position: sticky;
+  top: var(--c-bar-h);
+  height: calc(100vh - var(--c-bar-h));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: var(--sunken);
+}
+.consult-rail { display: grid; align-content: start; gap: 24px; padding: 16px 12px; border-right: 1px solid var(--line); outline: 0; }
+.consult-chart { display: grid; align-content: start; border-left: 1px solid var(--line); }
+
+/* steps */
+.rail-steps, .rail-subs, .rail-areas ul { list-style: none; margin: 0; padding: 0; }
+.rail-steps { display: grid; gap: 2px; }
+.rail-steps > li > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  text-align: start;
+}
+.rail-steps > li > button:active { background: var(--line); }
+.rail-steps > li > button[aria-current="step"] { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line), inset 3px 0 var(--brand); }
+.rail-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--text-muted);
+  font: 500 13px/1 var(--mono);
+}
+[data-state="done"] > button .rail-mark { border-color: var(--ok); background: var(--ok); color: #fff; }
+[data-state="attention"] > button .rail-mark { border-color: var(--warn); color: var(--warn); }
+.rail-steps > li > button[aria-current="step"] .rail-mark { border-color: var(--brand); background: var(--brand); color: #fff; }
+.rail-text { flex: 1; min-width: 0; display: grid; }
+.rail-text strong { font-size: 14px; font-weight: 600; line-height: 1.3; }
+.rail-text small { overflow: hidden; color: var(--text-muted); font-size: 12px; line-height: 1.4; white-space: nowrap; text-overflow: ellipsis; }
+.rail-count {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 3px;
+  background: var(--warn-tint);
+  color: var(--warn);
+  font: 500 12px/1 var(--mono);
+}
+.rail-subs { display: grid; margin: 2px 0 6px 46px; }
+.rail-subs button {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: start;
+}
+.rail-subs button:active { background: var(--line); color: var(--ink); }
+
+/* linked areas */
+.rail-areas { padding-top: 16px; border-top: 1px solid var(--line); }
+.rail-areas h3 { margin: 0 0 8px 10px; color: var(--text-muted); font-size: 12px; font-weight: 500; }
+.rail-areas ul { display: grid; gap: 4px; }
+.rail-areas li > button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: start;
+}
+.rail-areas li[data-state="attention"] > button { border-color: #ecd3a8; }
+.rail-areas li[data-state="done"] > button svg { flex: none; color: var(--ok); }
+.rail-empty { margin: 0 10px; color: var(--text-muted); font-size: 13px; }
+.rail-other { margin-top: 8px; }
+.rail-other summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+}
+.rail-other summary::-webkit-details-marker { display: none; }
+.rail-other summary span { color: var(--faint); font-family: var(--mono); }
+.rail-other summary::after { content: "+"; margin-left: auto; font: 400 18px/1 var(--mono); color: var(--text-muted); }
+.rail-other[open] summary::after { content: "−"; }
+.rail-other > div { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 2px 0; }
+.rail-other > div button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* ---------- note ---------- */
+.consult-note { min-width: 0; display: flex; flex-direction: column; background: var(--paper); }
+.consult-step-head,
+.consult-fields { width: 100%; max-width: 820px; margin: 0 auto; }
+.consult-step-head { display: flex; align-items: baseline; gap: 12px; padding: 24px 40px 0; }
+.consult-step-head span { order: 2; color: var(--faint); font: 400 13px/1 var(--mono); }
+.consult-step-head h2 { font: 600 22px/1.3 var(--sans); letter-spacing: -0.015em; outline: 0; }
+.consult-fields { flex: 1; padding: 0 40px 24px; }
+.consult-section { padding: 22px 0; scroll-margin-top: calc(var(--c-bar-h) + 12px); }
+.consult-section + .consult-section:not([hidden]) { border-top: 1px solid var(--line); }
+.consult-section[hidden] { display: none; }
+.consult-section h3 { margin-bottom: 14px; font: 600 16px/1.35 var(--sans); scroll-margin-top: calc(var(--c-bar-h) + 12px); outline: 0; }
+.consult-section h4 { margin-bottom: 12px; font: 600 15px/1.35 var(--sans); scroll-margin-top: calc(var(--c-bar-h) + 12px); outline: 0; }
+.section-title { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 10px; }
+.section-title > * { white-space: nowrap; }
+.tag-required, .tag-optional { font-size: 12px; font-weight: 500; }
+.tag-required { color: var(--warn); }
+.tag-optional { color: var(--faint); }
+.section-help { margin: -6px 0 18px; color: var(--text-muted); font-size: 14px; max-width: 64ch; }
+.consult .field-help { display: block; margin: 2px 0 0; color: var(--text-muted); font-size: 13px; font-weight: 400; }
+
+/* fields */
+.consult label { color: var(--ink); font-size: 14px; font-weight: 500; }
+.consult .reasoning-field { display: block; margin: 20px 0 0; }
+.consult .reasoning-field > input,
+.consult .reasoning-field > textarea,
+.consult .vital-entry input,
+.consult .rx-fields input,
+.consult .rx-quick select {
+  margin-top: 6px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+}
+.consult .reasoning-field > input, .consult .rx-fields input { min-height: 48px; padding: 0 12px; }
+.consult .reasoning-field > textarea { min-height: 120px; padding: 10px 12px; line-height: 1.6; }
+.consult input:focus, .consult textarea:focus, .consult select:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px #075e8022;
+}
+
+/* choices: square checkboxes for multi-select, joined segments for single choice */
+.consult .visit-choices { margin: 0 0 16px; }
+.consult .visit-choices legend { margin-bottom: 8px; padding: 0; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.choice-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.consult .choice-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--c-tap);
+  padding: 0 16px 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+  cursor: pointer;
+  user-select: none;
+}
+.consult .choice-chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.consult .choice-chip::before {
+  content: "";
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 2px;
+  background: var(--paper) center / 12px no-repeat;
+}
+.consult .choice-chip:has(input:checked) { border-color: var(--brand); background: var(--accent-tint); color: var(--brand-dark); font-weight: 500; }
+.consult .choice-chip:has(input:checked)::before {
+  border-color: var(--brand);
+  background-color: var(--brand);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E");
+}
+.consult .choice-chip:has(input:focus-visible) { outline: 2px solid var(--brand); outline-offset: 2px; }
+.consult .choice-chip:has(input:disabled:not(:checked)) { opacity: 0.5; }
+/* single choice: a joined segmented control */
+.consult .visit-choices[data-exclusive] .choice-chips { display: inline-flex; flex-wrap: wrap; gap: 0; }
+.consult .visit-choices[data-exclusive] .choice-chip { padding: 0 18px; border-radius: 0; margin-left: -1px; }
+.consult .visit-choices[data-exclusive] .choice-chip::before { display: none; }
+.consult .visit-choices[data-exclusive] .choice-chip:first-child { margin-left: 0; border-radius: 4px 0 0 4px; }
+.consult .visit-choices[data-exclusive] .choice-chip:last-child { border-radius: 0 4px 4px 0; }
+.consult .visit-choices[data-exclusive] .choice-chip:has(input:checked) { position: relative; z-index: 1; background: var(--brand); border-color: var(--brand); color: #fff; }
+
+.symptom-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 28px; }
+.symptom-groups .visit-choices { margin-bottom: 14px; }
+
+/* body-area blocks */
+.area-block { margin: 0 0 20px; padding: 16px 0 2px 16px; border-left: 2px solid var(--line); }
+.area-block[data-open] { border-left-color: var(--warn); }
+.chart-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--sunken);
+  font-size: 14px;
+}
+.chart-link > svg { flex: none; color: var(--brand); }
+.chart-link > div { flex: 1; }
+.chart-link strong { display: block; color: var(--text-muted); font-size: 12px; font-weight: 500; }
+
+/* vitals */
+.vitals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.vital-card { padding: 12px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.vital-card > label { color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.vital-entry { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.consult .vital-entry input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  padding: 0 10px;
+  font: 500 22px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.vital-unit { min-width: 40px; color: var(--text-muted); font: 400 13px/1 var(--mono); }
+.consult .touch-keypad-trigger {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.vital-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 8px; color: var(--faint); font-size: 12px; }
+.vital-meta data { color: var(--text-muted); font-size: 12px; }
+.vital-flag { padding: 1px 6px; border-radius: 3px; font: 600 11px/1.5 var(--mono); }
+.vital-flag[data-flag="H"] { background: var(--crit-tint); color: var(--crit); }
+.vital-flag[data-flag="L"] { background: var(--accent-tint); color: var(--brand-dark); }
+.consult .visit-trends { margin-top: 16px; }
+.consult .visit-trends summary, .consult .rule-note summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--brand-dark);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* prescriptions */
+.prescription-list { display: grid; border-top: 1px solid var(--line); }
+.rx-card { padding: 16px 0 18px; border-bottom: 1px solid var(--line); }
+.rx-top { display: flex; align-items: flex-start; gap: 10px; }
+.rx-number { flex: none; display: grid; place-items: center; width: 28px; height: 48px; color: var(--faint); font: 500 14px/1 var(--mono); }
+.rx-top .medicine-picker { flex: 1; min-width: 0; }
+.consult .medicine-trigger {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  font-size: 15px;
+  font-weight: 500;
+}
+.consult .medicine-choices ul { border: 1px solid var(--line); border-radius: 4px; }
+.consult .medicine-choices li { border-color: var(--line); }
+.consult .medicine-choices li button { min-height: 48px; font-size: 15px; }
+.consult .medicine-choices li button[aria-pressed="true"], .consult .medicine-choices li button:hover { background: var(--accent-tint); color: var(--brand-dark); }
+.consult .medicine-choices input { min-height: 48px; margin-top: 6px; padding: 0 12px; border: 1px solid var(--rule-strong); border-radius: 4px; font-size: 15px; }
+.consult .icon-button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+}
+.consult .icon-button.danger { color: var(--crit); }
+.consult .icon-button:active { background: var(--sunken); border-color: var(--line); }
+.rx-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 20px; margin: 14px 0 0 38px; }
+.rx-quick { display: flex; flex-wrap: wrap; gap: 0; margin-top: 6px; }
+.rx-quick button {
+  min-height: 44px;
+  margin-left: -1px;
+  padding: 0 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 14px;
+}
+.rx-quick button:first-child { margin-left: 0; border-radius: 4px 0 0 4px; }
+.rx-quick button[aria-pressed="true"] { position: relative; z-index: 1; border-color: var(--brand); background: var(--brand); color: #fff; }
+.consult .rx-quick select { width: auto; min-height: 44px; margin: 0 0 0 -1px; padding: 0 32px 0 12px; border-radius: 0 4px 4px 0; font-size: 14px; }
+.consult .rx-fields .route-choices > input, .consult .rx-fields .frequency-choices > input { margin-top: 6px; }
+.consult .add-rx { min-height: 48px; margin-top: 14px; padding: 0 16px; border: 1px solid var(--rule-strong); border-radius: 4px; background: var(--paper); font-size: 15px; font-weight: 500; color: var(--brand-dark); }
+.consult .rule-note { margin-bottom: 14px; padding: 4px 14px 12px; border: 1px solid #ecd3a8; border-radius: 4px; background: var(--warn-tint); }
+.consult .rule-note ul { margin: 0; padding-left: 18px; }
+
+/* review */
+.review-missing, .review-ready, .review-prompt { margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 4px; }
+.review-missing { border-color: #ecd3a8; background: var(--warn-tint); }
+.review-missing ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.review-missing button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #ecd3a8;
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 500;
+}
+.review-add { display: inline-flex; align-items: center; gap: 4px; color: var(--brand-dark); }
+.review-ready { display: flex; align-items: center; gap: 10px; border-color: #bfdccb; background: var(--ok-tint); color: var(--ok); font-weight: 500; }
+.review-prompt { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--sunken); }
+.consult .visit-summary { margin: 0; border-top: 1px solid var(--line); }
+.consult .visit-summary > div {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.consult .visit-summary dt { padding-top: 12px; color: var(--text-muted); font-size: 13px; font-weight: 500; }
+.consult .visit-summary dd { margin: 0; padding-top: 11px; white-space: pre-line; overflow-wrap: anywhere; }
+.consult .visit-summary dd[data-empty] { color: var(--faint); }
+.consult .visit-summary button { min-height: 44px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: var(--brand-dark); font-weight: 500; }
+
+/* action bar */
+.consult-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 40px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+.consult-actions-spacer { flex: 1; }
+.consult-actions .error-message { flex: 1; min-width: 0; margin: 0; color: var(--crit); font-weight: 500; }
+.consult-actions .button { min-height: 52px; padding: 0 22px; border-radius: 4px; font-size: 15px; font-weight: 600; }
+.consult-actions .button.secondary { border: 1px solid var(--rule-strong); color: var(--ink); background: var(--paper); }
+.consult-actions .button.primary { min-width: 180px; background: var(--brand); border-color: var(--brand); color: #fff; }
+.consult-actions .button.complete:not(:disabled) { background: var(--ok); border-color: var(--ok); }
+.consult-actions .button:disabled { cursor: not-allowed; background: var(--sunken); border-color: var(--line); color: var(--faint); opacity: 1; }
+
+/* ---------- chart pane ---------- */
+.consult-chart-head { display: none; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--paper); }
+.consult-chart-head h2 { font: 600 17px/1.3 var(--sans); }
+.consult-chart .context-stack { display: grid; gap: 0; }
+.consult-chart .panel { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; box-shadow: none; }
+.consult-chart .allergy-panel { border-left: 0; background: transparent; }
+.consult-chart .allergy-panel .panel-heading svg { color: var(--crit); }
+.consult-chart .panel-heading { padding: 14px 16px 4px; border: 0; background: transparent; }
+.consult-chart .panel-heading h2 { display: flex; align-items: center; gap: 8px; font: 600 13px/1.4 var(--sans); color: var(--ink); }
+.consult-chart .panel-heading svg { width: 15px; height: 15px; color: var(--text-muted); }
+.consult-chart .count { padding: 0; border-radius: 0; background: none; color: var(--faint); font: 400 12px/1 var(--mono); }
+.consult-chart .clinical-list { padding: 0 16px 8px; }
+.consult-chart .clinical-list li { padding: 8px 0; border-color: var(--line); }
+.consult-chart .clinical-list strong { display: block; font-size: 14px; font-weight: 500; }
+.consult-chart .clinical-list span, .consult-chart .clinical-list small { color: var(--text-muted); font-size: 13px; }
+.consult-chart .empty-copy { padding: 0 16px 14px; color: var(--text-muted); font-size: 13px; }
+.chart-vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin: 0; padding: 6px 16px 16px; }
+.chart-vitals dt { color: var(--text-muted); font-size: 12px; }
+.chart-vitals dd { margin: 0; font: 500 17px/1.3 var(--mono); }
+.chart-vitals small { color: var(--faint); font-size: 11px; font-weight: 400; }
+.previous-visits { list-style: none; margin: 0; padding: 0 8px 8px; }
+.previous-visits li + li { border-top: 1px solid var(--line); }
+.previous-visits button {
+  display: grid;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  text-align: start;
+}
+.previous-visits button:active, .previous-visits button[aria-expanded="true"] { background: var(--paper); box-shadow: inset 0 0 0 1px var(--line); }
+.previous-visits button strong { font: 500 12px/1.4 var(--mono); color: var(--text-muted); }
+.previous-visits button span { font-size: 14px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.previous-visits .reference-record { padding: 8px 8px 14px; font-size: 13px; }
+.consult-chart .visit-record h3, .consult-chart .visit-record dt { color: var(--text-muted); font-size: 12px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.consult-chart .visit-record p, .consult-chart .visit-record dd, .consult-chart .visit-record li, .consult-chart .note-text { font-size: 14px; line-height: 1.55; color: var(--ink); }
+.consult-scrim { display: none; }
+
+/* ---------- smaller landscape and portrait tablets: chart becomes a drawer ---------- */
+@media (max-width: 1179px) {
+  .consult-grid { grid-template-columns: 220px minmax(0, 1fr); }
+  .consult-step-head { padding-inline: 28px; }
+  .consult-fields { padding-inline: 28px; }
+  .consult-actions { padding-inline: 28px; }
+  .consult-chart-toggle { display: inline-flex; }
+  .consult-chart {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    width: min(400px, 92vw);
+    height: auto;
+    border-left: 1px solid var(--line);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform 200ms cubic-bezier(.2, .8, .2, 1), visibility 0s 200ms;
+  }
+  .consult[data-chart-open] .consult-chart { transform: none; visibility: visible; transition-delay: 0s; }
+  .consult-chart-head { display: flex; }
+  .consult[data-chart-open] .consult-scrim { display: block; position: fixed; inset: 0; z-index: 40; border: 0; background: #10141859; }
+}
+
+/* ---------- narrow portrait and phones: steps across the top ---------- */
+@media (max-width: 860px) {
+  .consult-who { flex-direction: column; gap: 0; }
+  .consult-grid { display: block; }
+  .consult-rail {
+    position: sticky;
+    top: var(--c-bar-h);
+    z-index: 20;
+    height: auto;
+    gap: 0;
+    padding: 6px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow: visible;
+  }
+  .rail-steps { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .rail-steps > li { flex: none; }
+  .rail-steps > li > button { min-height: 48px; padding: 4px 12px 4px 8px; }
+  .rail-steps > li > button[aria-current="step"] { box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px var(--brand); }
+  .rail-text small, .rail-subs { display: none; }
+  .rail-areas { display: flex; align-items: center; gap: 8px; padding-top: 6px; border-top: 0; overflow-x: auto; scrollbar-width: none; }
+  .rail-areas h3 { flex: none; margin: 0 4px 0 0; }
+  .rail-areas ul { display: flex; gap: 4px; }
+  .rail-areas li > button { min-height: 44px; padding: 0 10px; white-space: nowrap; }
+  .rail-areas .rail-text small { display: none; }
+  .rail-empty { margin: 0; white-space: nowrap; }
+  .rail-other { display: none; }
+  .consult-step-head { padding: 20px 20px 0; }
+  .consult-fields { padding: 0 20px 16px; }
+  .consult-actions { flex-wrap: wrap; padding-inline: 16px; }
+  .consult-actions-spacer { display: none; }
+  .consult-actions .error-message { flex-basis: 100%; }
+  .consult-actions .button { flex: 1; }
+  .consult-actions .button.primary { min-width: 0; }
+  .rx-fields { margin-left: 0; }
+  .consult .visit-summary > div { grid-template-columns: minmax(0, 1fr) auto; }
+  .consult .visit-summary dd { grid-column: 1 / -1; padding-top: 0; }
+}
+@media (max-width: 600px) {
+  .consult { --c-bar-h: 112px; }
+  .consult-bar { flex-wrap: wrap; row-gap: 6px; padding: 8px 14px; }
+  .consult-who { flex: 1 1 calc(100% - 180px); }
+  .consult-who h1 { white-space: normal; }
+  .consult-who p { overflow: hidden; text-overflow: ellipsis; }
+  .consult-chart-toggle { order: 3; }
+  .consult-flags { order: 5; flex: 1 1 55%; padding-left: 0; border-left: 0; }
+  .consult-save { order: 6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .consult *, .consult *::before { transition: none !important; }
+}
+@media print {
+  .consult-rail, .consult-actions, .consult-chart-toggle, .consult-back { display: none; }
+  .consult-grid { display: block; }
+}
+
+/* review fixes */
+.vitals-grid { gap: 0; }
+.consult .vital-entry input { -moz-appearance: textfield; appearance: textfield; }
+.consult .vital-entry input::-webkit-outer-spin-button,
+.consult .vital-entry input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.rx-fields { grid-template-columns: minmax(0, 1fr); }
+.rx-quick { gap: 6px; }
+.rx-quick button, .rx-quick button:first-child { margin-left: 0; border-radius: 4px; }
+.consult .rx-quick select { margin: 0; border-radius: 4px; }
