@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { ChevronRight, Plus, ShieldAlert, X } from "lucide-react";
+import { ChevronRight, Play, Plus, ShieldAlert, X } from "lucide-react";
 import { ClinicShell } from "@/components/clinic-shell";
 import { ListFilter } from "@/components/list-filter";
+import { startVisit } from "@/app/actions";
 import { formatWhen } from "@/lib/chart";
 import { clinicCopy } from "@/lib/clinic-copy";
 import { displayName } from "@/lib/copy";
@@ -11,7 +12,7 @@ import { getLocale } from "@/lib/locale";
 
 export const dynamic = "force-dynamic";
 
-type Search = { q?: string; sex?: string; age?: string; visit?: string; condition?: string; allergy?: string };
+type Search = { q?: string; sex?: string; age?: string; visit?: string; condition?: string; allergy?: string; start?: string };
 type Row = {
   id: string; chart_number: string; name_text: string; family_name: string; given_name: string;
   sex: string; age: number; phone: string | null; last_visit: string | null;
@@ -32,6 +33,9 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     search = await searchParams;
   const pick = (value: unknown, allowed: string[]) => typeof value === "string" && allowed.includes(value) ? value : "";
   const query = typeof search.q === "string" ? search.q.trim().slice(0, 200) : "";
+  // "Start consultation" opens the list in this mode: tapping a patient goes
+  // straight into their consultation instead of their chart.
+  const starting = search.start === "1";
 
   // Every patient with what the segments need. Filtering and counting
   // happen below, so each segment can show how many patients it holds.
@@ -53,7 +57,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   );
   const everyone = result.rows;
   const conditions = [...new Set(everyone.flatMap((row) => row.problems))].sort();
-  const filter: Required<Search> = {
+  const filter: Required<Omit<Search, "start">> = {
     q: query,
     sex: pick(search.sex, ["female", "male"]),
     age: pick(search.age, ageBands.map((band) => band.id)),
@@ -63,7 +67,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   };
 
   const needle = query.toLocaleLowerCase(), digits = query.replace(/\D/g, "");
-  const tests: Record<keyof Search, (row: Row) => boolean> = {
+  const tests: Record<Exclude<keyof Search, "start">, (row: Row) => boolean> = {
     q: (row) => !needle || [row.name_text, row.family_name, row.given_name, row.given_name + " " + row.family_name,
       row.family_name + " " + row.given_name, row.chart_number, row.phone ?? ""].some((value) => value.toLocaleLowerCase().includes(needle))
       || (digits.length >= 2 && (row.chart_number.replace(/\D/g, "").includes(digits) || (row.phone ?? "").replace(/\D/g, "").includes(digits))),
@@ -79,19 +83,21 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     condition: (row) => !filter.condition || row.problems.includes(filter.condition),
     allergy: (row) => !filter.allergy || row.allergy,
   };
-  const matching = (skip?: keyof Search) =>
-    everyone.filter((row) => (Object.keys(tests) as (keyof Search)[]).every((key) => key === skip || tests[key](row)));
+  type FilterKey = keyof typeof tests;
+  const matching = (skip?: FilterKey) =>
+    everyone.filter((row) => (Object.keys(tests) as FilterKey[]).every((key) => key === skip || tests[key](row)));
   const patients = matching();
   // How many patients an option would show, given the other filters.
-  const countWith = (key: keyof Search, test: (row: Row) => boolean) => matching(key).filter(test).length;
+  const countWith = (key: FilterKey, test: (row: Row) => boolean) => matching(key).filter(test).length;
 
-  const href = (change: Partial<Search>) => {
+  const href = (change: Partial<Omit<Search, "start">>) => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries({ ...filter, ...change })) if (value) params.set(key, value);
+    if (starting) params.set("start", "1");
     const text = params.toString();
     return "/patients" + (text ? "?" + text : "");
   };
-  const groups: { key: keyof Search; title: string; options: { id: string; label: string; count: number }[] }[] = [
+  const groups: { key: FilterKey; title: string; options: { id: string; label: string; count: number }[] }[] = [
     {
       key: "sex", title: en ? "Sex" : "性別",
       options: [["female", en ? "Female" : "女"], ["male", en ? "Male" : "男"]].map(([id, label]) => ({
@@ -134,16 +140,22 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   return (
     <ClinicShell locale={locale}>
-      <div className="directory">
+      <div className="directory" data-starting={starting || undefined}>
         <header className="directory-head">
           <div>
-            <h1>{c.directory}</h1>
-            <p>{en ? `${everyone.length} registered patients` : `已登記病人 ${everyone.length} 位`}</p>
+            <h1>{starting ? (en ? "Start consultation" : "開始診症") : c.directory}</h1>
+            <p>{starting
+              ? (en ? "Tap a patient to open their consultation." : "點選病人，即可進入診症。")
+              : (en ? `${everyone.length} registered patients` : `已登記病人 ${everyone.length} 位`)}</p>
           </div>
-          <Link href="/patients/new" className="button primary">
-            <Plus size={18} aria-hidden="true" />
-            {c.newPatient}
-          </Link>
+          {starting ? (
+            <Link href="/patients" className="button secondary">{en ? "Cancel" : "取消"}</Link>
+          ) : (
+            <Link href="/patients/new" className="button primary">
+              <Plus size={18} aria-hidden="true" />
+              {c.newPatient}
+            </Link>
+          )}
         </header>
 
         <div className="directory-body">
@@ -185,15 +197,15 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                       </Link>
                     </li>
                   ))}
-                  <li><Link className="clear-all" scroll={false} href="/patients">{en ? "Clear all" : "全部清除"}</Link></li>
+                  <li><Link className="clear-all" scroll={false} href={starting ? "/patients?start=1" : "/patients"}>{en ? "Clear all" : "全部清除"}</Link></li>
                 </ul>
               )}
             </div>
             {shown.length ? (
               <ul className="patient-rows">
-                {shown.map((row) => (
-                  <li key={row.id}>
-                    <Link href={"/patients/" + row.id}>
+                {shown.map((row) => {
+                  const content = (
+                    <>
                       <span className="row-who">
                         <strong className="patient-name">
                           {en ? `${row.family_name.toUpperCase()}, ${row.given_name}` : displayName(locale, row)}
@@ -207,15 +219,34 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                         {row.problems.slice(0, 2).map((problem) => <span key={problem}>{problem}</span>)}
                         {row.problems.length > 2 && <span>+{row.problems.length - 2}</span>}
                       </span>
-                      <span className="row-visit">
-                        {row.open_visit_id
-                          ? <span className="row-open">{en ? "Open consultation" : "未完成診症"}</span>
-                          : <time dateTime={row.last_visit ?? undefined}>{row.last_visit ? formatWhen(row.last_visit, locale) : (en ? "No visits yet" : "未有就診")}</time>}
-                      </span>
+                      {starting ? (
+                        <span className="row-start">
+                          <Play size={15} aria-hidden="true" />
+                          {row.open_visit_id ? (en ? "Resume consultation" : "繼續診症") : (en ? "Start consultation" : "開始診症")}
+                        </span>
+                      ) : (
+                        <span className="row-visit">
+                          {row.open_visit_id
+                            ? <span className="row-open">{en ? "Open consultation" : "未完成診症"}</span>
+                            : <time dateTime={row.last_visit ?? undefined}>{row.last_visit ? formatWhen(row.last_visit, locale) : (en ? "No visits yet" : "未有就診")}</time>}
+                        </span>
+                      )}
                       <ChevronRight size={18} aria-hidden="true" className="row-go" />
-                    </Link>
-                  </li>
-                ))}
+                    </>
+                  );
+                  return (
+                    <li key={row.id}>
+                      {starting ? (
+                        // A form, not a link: links are prefetched, and this one opens or creates a visit.
+                        <form action={startVisit.bind(null, row.id)}>
+                          <button type="submit">{content}</button>
+                        </form>
+                      ) : (
+                        <Link href={"/patients/" + row.id}>{content}</Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             ) : (
               <p className="directory-empty">{c.noPatients}{active.length ? (en ? ". Remove a filter to see more." : "。請移除篩選以查看更多。") : ""}</p>

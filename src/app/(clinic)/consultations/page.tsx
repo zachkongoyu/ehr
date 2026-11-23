@@ -57,7 +57,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             <h1>{en ? "Consultations" : "診症"}</h1>
 
           </div>
-          <Link href="/patients" className="button primary">
+          <Link href="/patients?start=1" className="button primary">
             <Plus size={18} aria-hidden="true" />
             {en ? "Start consultation" : "開始診症"}
           </Link>

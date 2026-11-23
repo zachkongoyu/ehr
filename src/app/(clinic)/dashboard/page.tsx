@@ -85,7 +85,7 @@ export default async function DashboardPage() {
             <h1>{en ? "Clinic overview" : "診所總覽"}</h1>
             <p><time>{today}</time> · {en ? "Hong Kong time" : "香港時間"}</p>
           </div>
-          <Link className="button primary" href="/patients">
+          <Link className="button primary" href="/patients?start=1">
             <Plus size={18} aria-hidden="true" />
             {en ? "Start consultation" : "開始診症"}
           </Link>
