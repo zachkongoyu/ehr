@@ -53,7 +53,7 @@ try {
   assert.equal((await fetch(origin + "/dashboard")).status, 200);
   assert.ok((await page("/patients")).includes("Patient directory"));
   const dashboard = await page("/dashboard");
-  assert.ok(dashboard.includes('class="app-sidebar"'));
+  assert.ok(dashboard.includes('class="clinic-masthead"'));
   assert.ok(dashboard.includes('data-slot="bar-chart"'));
   assert.ok(dashboard.includes("Monthly consultation activity data"));
   for (const label of [
@@ -63,10 +63,7 @@ try {
     "Resume",
   ])
     assert.ok(dashboard.includes(label), label);
-  assert.ok(
-    !dashboard.includes('class="patient-table"'),
-    "overview uses cards and charts rather than the full table",
-  );
+  assert.ok(dashboard.includes('class="patient-table queue-table"'));
   assert.ok(dashboard.includes("Today's visit status"));
   assert.ok((await page("/consultations?status=open")).includes("Resume"));
   assert.ok(
@@ -182,7 +179,8 @@ try {
     "Vitals",
     "Prescriptions",
     "Save draft",
-    "Complete visit",
+    "Working diagnosis",
+    "Review",
   ])
     assert.ok(editor.includes(label), label);
   const medicine = (
@@ -218,7 +216,7 @@ try {
   );
   assert.ok((await page(visitPath)).includes("A saved history"));
   const restored = await page(visitPath);
-  assert.ok(restored.includes("Search medicines by product name or strength"));
+  assert.ok(restored.includes("Choose medicine"));
   assert.ok(restored.includes("Metformin 850 mg tablet"));
   assert.ok(restored.includes("route-suggestions"));
   assert.equal(

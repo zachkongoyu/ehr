@@ -43,9 +43,6 @@ export function PatientHeader({
         <span>{patient.chart_number}</span>
       </div>
       <section className="patient-header" aria-label={c.demographics}>
-        <div className="patient-avatar" aria-hidden="true">
-          {patient.name.slice(0, 1)}
-        </div>
         <div className="patient-heading">
           <div className="eyebrow">
             {c.chart} · {patient.chart_number}
