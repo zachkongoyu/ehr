@@ -14,6 +14,7 @@ import "./globals.css";
 import "./workspace.css";
 import "./consult.css";
 import "./chart-page.css";
+import "./worklist.css";
 import "./chrome.css";
 
 export const dynamic = "force-dynamic";
