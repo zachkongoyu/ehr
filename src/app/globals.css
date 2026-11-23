@@ -1998,3 +1998,11 @@ h2 {
 .guide-shortcut { margin-left: auto; color: #3275f6; font-size: 12px; }
 @media (max-width: 600px) { .guide-intro { padding: 14px; align-items: start; flex-wrap: wrap; } .guide-intro > div { flex-basis: calc(100% - 50px); } .guide-toggle { margin-left: 48px; } .guide-walkthrough { padding: 18px; } }
 @media print { .demo-guide { display: none; } }
+
+.form-section .visit-choices { border: 0; padding: 0; margin: 0 0 1rem; min-width: 0; }
+.visit-choices legend { font-size: .875rem; font-weight: 600; margin-bottom: .4rem; }
+.visit-choices > div { display: flex; flex-wrap: wrap; gap: .4rem; }
+.form-section .visit-choices label { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; padding: .35rem .75rem; border: 1px solid #a8b8b4; border-radius: .5rem; cursor: pointer; }
+.form-section .visit-choices input { width: 1rem; height: 1rem; min-height: 0; margin: 0; accent-color: #185c50; }
+.visit-choices label:has(:checked) { background: #e2f3eb; color: #164d43; }
+.visit-choices label:focus-within { outline: 2px solid #185c50; outline-offset: 2px; }
