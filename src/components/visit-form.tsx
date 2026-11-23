@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
 import { ClinicalTrend } from "@/components/clinical-trend";
+import { TouchNumber } from "@/components/touch-number";
 import { VisitChoices } from "@/components/visit-choices";
 import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
@@ -17,6 +18,43 @@ import {
 } from "@/lib/consultation";
 import type { PatientChart, VisitView } from "@/lib/chart";
 import type { Locale } from "@/lib/locale-shared";
+
+const prescriptionChoices = {
+  route: [
+            "Oral",
+            "Sublingual",
+            "Buccal",
+            "Topical",
+            "Inhalation",
+            "Intranasal",
+            "Ophthalmic",
+            "Otic",
+            "Rectal",
+            "Vaginal",
+            "Subcutaneous",
+            "Intramuscular",
+            "Intravenous",
+            "Transdermal",
+          ],
+  frequency: [
+            "Once daily",
+            "Twice daily",
+            "Three times daily",
+            "Four times daily",
+            "Every 4 hours",
+            "Every 6 hours",
+            "Every 8 hours",
+            "Every 12 hours",
+            "At bedtime",
+            "Before meals",
+            "After meals",
+            "Once weekly",
+            "As needed",
+            "Single dose",
+          ],
+};
+
+const doseUnits = ["mg", "mcg", "g", "mL", "tablet(s)", "capsule(s)", "unit(s)"];
 
 export function VisitFormCard({
   locale,
@@ -101,6 +139,17 @@ export function VisitFormCard({
   const dxChoices = en ? ["Upper respiratory infection", "Allergic rhinitis", "Hypertension"] : ["上呼吸道感染", "過敏性鼻炎", "高血壓"];
   function updateNote(field: keyof Note, value: string) {
     setNote({ ...note, [field]: value });
+    changed();
+  }
+  function updatePrescription(index: number, field: keyof Prescription, value: string) {
+    setPrescriptions((rows) => rows.map((row, position) =>
+      position === index ? { ...row, [field]: value } : row,
+    ));
+    changed();
+  }
+
+  function updateVital(key: string, value: string) {
+    setVitals((values) => ({ ...values, [key]: value }));
     changed();
   }
   const formRef = useRef<HTMLFormElement>(null);
@@ -272,24 +321,21 @@ export function VisitFormCard({
             </div>
             <div className="vitals-grid">
               {Object.entries(vitalDefinitions).map(([key, definition]) => (
-                <label key={key} htmlFor={"vital-" + key}>
-                  {locale === "en" ? definition.label : definition.zh}
-                  <div className="unit-input">
-                    <input
-                      id={"vital-" + key}
-                      type="number"
-                      step="any"
-                      min={definition.min}
-                      max={definition.max}
-                      value={vitals[key] ?? ""}
-                      onChange={(event) => {
-                        setVitals({ ...vitals, [key]: event.target.value });
-                        changed();
-                      }}
-                    />
-                    <span>{definition.unit}</span>
+                <div key={key}>
+                  <label htmlFor={"vital-" + key}>{en ? definition.label : definition.zh}</label>
+                  <div className="touch-entry">
+                    <div className="unit-input">
+                      <input id={"vital-" + key} type="number" step="any"
+                        min={definition.min} max={definition.max}
+                        value={vitals[key] ?? ""}
+                        onChange={(event) => updateVital(key, event.target.value)} />
+                      <span>{definition.unit}</span>
+                    </div>
+                    <TouchNumber id={"vital-" + key} label={(en ? definition.label : definition.zh) + " (" + definition.unit + ")"}
+                      value={vitals[key] ?? ""} locale={locale} min={definition.min} max={definition.max}
+                      onChange={(value) => updateVital(key, value)} />
                   </div>
-                </label>
+                </div>
               ))}
             </div>
             {stage === 1 && chartVisits.length > 0 && (
@@ -354,6 +400,10 @@ export function VisitFormCard({
             <VisitChoices title={en ? "Planned investigations" : "擬安排檢查"}
               options={en ? ["Full blood count", "Chest X-ray", "Urinalysis"] : ["全血計數", "胸部 X 光", "尿液分析"]}
               value={note.plan} onChange={(value) => updateNote("plan", value)} />
+            <VisitChoices title={en ? "Management discussed" : "已討論的處理安排"}
+              options={en ? ["Treatment options discussed", "Observation agreed", "Referral discussed"]
+                : ["已討論治療選項", "已同意觀察", "已討論轉介"]}
+              value={note.plan} onChange={(value) => updateNote("plan", value)} />
             {field("plan")}
             <VisitChoices title={en ? "Follow-up plan" : "跟進安排"}
               options={en ? ["Review pending results", "Arrange reassessment"] : ["覆核待查結果", "安排再次評估"]}
@@ -413,31 +463,29 @@ export function VisitFormCard({
                     </button>
                   </div>
                   <div className="prescription-fields">
-                    {(["dose", "route", "frequency"] as const).map((field) => (
-                      <label key={field} htmlFor={field + "-" + index}>
-                        {c[field]}
-                        <input
-                          id={field + "-" + index}
-                          maxLength={2000}
-                          list={
-                            field === "dose"
-                              ? undefined
-                              : field + "-suggestions"
-                          }
-                          value={item[field]}
-                          onChange={(event) => {
-                            setPrescriptions(
-                              prescriptions.map((row, i) =>
-                                i === index
-                                  ? { ...row, [field]: event.target.value }
-                                  : row,
-                              ),
-                            );
-                            changed();
-                          }}
-                        />
-                      </label>
-                    ))}
+                    {(["dose", "route", "frequency"] as const).map((field) => {
+                      const id = field + "-" + index;
+                      return (
+                        <div key={field}>
+                          <label htmlFor={id}>{c[field]}</label>
+                          <div className="touch-entry">
+                            <input id={id} maxLength={2000} value={item[field]}
+                              onChange={(event) => updatePrescription(index, field, event.target.value)} />
+                            {field === "dose" && <TouchNumber id={id} label={c.dose} value={item.dose}
+                              locale={locale} units={doseUnits}
+                              onChange={(value) => updatePrescription(index, field, value)} />}
+                          </div>
+                          {field !== "dose" && (
+                            <select aria-label={(en ? "Choose " : "選擇") + c[field].toLocaleLowerCase()}
+                              value={prescriptionChoices[field].includes(item[field]) ? item[field] : ""}
+                              onChange={(event) => updatePrescription(index, field, event.target.value)}>
+                              <option value="" disabled>{en ? "Choose " + c[field].toLocaleLowerCase() : "選擇" + c[field]}</option>
+                              {prescriptionChoices[field].map((option) => <option key={option}>{option}</option>)}
+                            </select>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -490,46 +538,6 @@ export function VisitFormCard({
             </dl>
           </section>}
         </fieldset>
-        <datalist id="route-suggestions">
-          {[
-            "Oral",
-            "Sublingual",
-            "Buccal",
-            "Topical",
-            "Inhalation",
-            "Intranasal",
-            "Ophthalmic",
-            "Otic",
-            "Rectal",
-            "Vaginal",
-            "Subcutaneous",
-            "Intramuscular",
-            "Intravenous",
-            "Transdermal",
-          ].map((value) => (
-            <option key={value} value={value} />
-          ))}
-        </datalist>
-        <datalist id="frequency-suggestions">
-          {[
-            "Once daily",
-            "Twice daily",
-            "Three times daily",
-            "Four times daily",
-            "Every 4 hours",
-            "Every 6 hours",
-            "Every 8 hours",
-            "Every 12 hours",
-            "At bedtime",
-            "Before meals",
-            "After meals",
-            "Once weekly",
-            "As needed",
-            "Single dose",
-          ].map((value) => (
-            <option key={value} value={value} />
-          ))}
-        </datalist>
         <div className="save-bar">
           <div className="save-status" aria-live="polite">
             {error ? (

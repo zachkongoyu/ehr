@@ -252,3 +252,32 @@ body { font-family: "Noto Sans HK", Arial, sans-serif; }
 @media (max-width: 600px) {
   .visit-prompt { margin-inline: 12px; flex-wrap: wrap; }
 }
+
+.touch-entry { display: flex; gap: 5px; align-items: end; }
+.touch-entry > input, .touch-entry > .unit-input { flex: 1; min-width: 0; }
+.touch-keypad-trigger {
+  display: grid; place-items: center; min-width: 44px; min-height: 44px;
+  color: var(--brand-dark); border: 1px solid var(--line); border-radius: 4px; background: white;
+}
+.touch-keypad {
+  position: fixed; inset: 0; margin: auto; padding: 20px;
+  width: min(340px, calc(100% - 24px)); max-height: calc(100% - 24px);
+  background: white; color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+}
+.touch-keypad::backdrop { background: #18263680; }
+.touch-keypad output {
+  display: block; margin-block: 10px; padding: 8px 12px; min-height: 44px;
+  font-size: 22px; background: var(--canvas); border-radius: 4px;
+}
+.touch-digits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.touch-units { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.touch-digits button, .touch-units button {
+  display: grid; place-items: center; min-height: 44px; padding-inline: 10px;
+  border: 1px solid var(--line); border-radius: 4px; background: white;
+}
+.touch-digits button { font-size: 19px; }
+.touch-units button[aria-pressed="true"] { background: var(--mint); border-color: var(--brand); }
+.touch-keypad-actions { display: flex; justify-content: space-between; gap: 8px; margin-top: 12px; }
+@media (max-width: 600px) {
+  .prescription-fields select { font-size: 16px; }
+}
