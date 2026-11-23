@@ -98,3 +98,47 @@ svg { stroke-width: 1.75; }
   .masthead-inner .nav-link { min-height: 48px; padding: 0 6px; font-size: 14px; white-space: nowrap; justify-content: center; }
   .masthead-inner .nav-link svg { display: none; }
 }
+
+/* ---------- touch response ---------- */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+/* Immediate pressed state for everything tappable; no transition on press
+   so the change lands on the same frame as the finger. */
+:is(button, .button, a, summary, .choice-chip, .map-node, .nav-link):not(:disabled):active {
+  filter: brightness(0.93);
+  transition: none;
+}
+:is(.button, .choice-chip, .map-node, .rx-quick button, .view-switch button, .rail-steps > li > button, .rail-areas li > button):not(:disabled):active {
+  transform: scale(0.98);
+}
+/* Hover colours stay on devices that can hover, so they never stick after a tap. */
+@media (hover: none) {
+  .masthead-inner .nav-link:hover { color: var(--text-muted); }
+  .masthead-inner .nav-link.current:hover { color: var(--ink); }
+}
+/* Waiting on the server: the tapped link or button dims and a bar runs along the top. */
+[data-pending] { opacity: 0.6; cursor: progress; }
+.nav-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  width: 100%;
+  height: 3px;
+  pointer-events: none;
+  transform-origin: left;
+  transform: scaleX(0);
+  opacity: 0;
+  background: var(--brand);
+}
+.nav-progress[data-active] {
+  opacity: 1;
+  animation: nav-progress 8s cubic-bezier(.1, .7, .2, 1) forwards;
+}
+@keyframes nav-progress {
+  0% { transform: scaleX(0); }
+  10% { transform: scaleX(0.4); }
+  100% { transform: scaleX(0.92); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress[data-active] { animation: none; transform: scaleX(0.6); }
+}
