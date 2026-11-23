@@ -3,6 +3,7 @@ import { useEffect, useState, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
+import { ClinicalTrend } from "@/components/clinical-trend";
 import { VisitChoices } from "@/components/visit-choices";
 import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
@@ -64,17 +65,32 @@ export function VisitFormCard({
   const en = locale === "en";
   const [stage, setStage] = useState(0);
   const indexRef = useRef<HTMLElement>(null);
-  function openStage(index: number) {
+  function openStage(index: number, targetId?: string) {
     setStage(index);
     requestAnimationFrame(() => {
-      indexRef.current?.querySelector<HTMLButtonElement>('[aria-current="step"]')?.focus({ preventScroll: true });
-      indexRef.current?.scrollIntoView({ block: "start" });
+      const target = targetId ? document.getElementById(targetId)
+        : indexRef.current?.querySelector<HTMLButtonElement>('[aria-current="step"]');
+      target?.focus({ preventScroll: true });
+      (targetId ? target : indexRef.current)?.scrollIntoView({ block: "nearest" });
     });
   }
   const stages = en ? ["Patient story", "Findings", "Working diagnosis", "Care plan", "Review"]
     : ["就診原因", "臨床所見", "初步診斷", "診療計劃", "覆核"];
   const available = medications.filter((medicine) => !withheld.some((rule) => rule.id === medicine.id));
   const respiratory = note.complaint.split(" · ").some((item) => ["Cough", "Sore throat", "咳嗽", "喉嚨痛"].includes(item.trim()));
+  const respiratoryFindings = en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"];
+  const recordedHistory = note.history.split("\n").map((line) => line.trim());
+  const missingFindings = (respiratory ? respiratoryFindings : []).filter((finding) =>
+    !(en ? ["Reported", "Denied"] : ["有", "否認"]).some((answer) =>
+      recordedHistory.includes(finding + " · " + answer),
+    ),
+  );
+  const reviewItems = [
+    { label: c.complaint, value: note.complaint, step: 0, id: "complaint" },
+    { label: c.assessment, value: note.assessment, step: 2, id: "assessment" },
+    { label: c.plan, value: note.plan, step: 3, id: "plan" },
+  ].filter((item) => !item.value.trim());
+  const chartVisits = previous.filter((item) => item.status === "finished" && item.vitals.length);
   function field(key: keyof Note, label = c[key]) {
     return <label className="reasoning-field" htmlFor={key}>{label}
       <textarea id={key} rows={3} maxLength={20000} value={note[key]}
@@ -212,6 +228,18 @@ export function VisitFormCard({
           ))}
         </nav>
         <fieldset disabled={pending} className="document-fields">
+          {missingFindings.length > 0 && (stage === 0 || stage === 4) && (
+            <section className="visit-prompt" aria-label={en ? "Suggested findings" : "建議查問"}>
+              <div>
+                <strong>{en ? "Respiratory questions to review" : "待覆核的呼吸系統問題"}</strong>
+                <p>{missingFindings.join(en ? ", " : "、")}</p>
+              </div>
+              <button type="button" className="button secondary small"
+                onClick={() => openStage(1, "respiratory-questions")}>
+                {en ? "Review questions" : "覆核問題"}
+              </button>
+            </section>
+          )}
           <section hidden={stage !== 0} id="visit-complaint" className="form-section">
             <div className="section-heading">
               
@@ -264,12 +292,18 @@ export function VisitFormCard({
                 </label>
               ))}
             </div>
+            {stage === 1 && chartVisits.length > 0 && (
+              <details className="visit-trends">
+                <summary>{en ? "Compare previous vitals" : "比較過往生命表徵"}</summary>
+                <ClinicalTrend visits={chartVisits} locale={locale} />
+              </details>
+            )}
           </section>
           <section hidden={stage !== 1} className="form-section">
             <h2>{en ? "Focused history and examination" : "重點病史及檢查"}</h2>
             <details key={String(respiratory)} open={respiratory || undefined}>
-              <summary>{en ? "Respiratory symptoms" : "呼吸系統症狀"}</summary>
-              {(en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"]).map((finding) => (
+              <summary id="respiratory-questions">{en ? "Respiratory symptoms" : "呼吸系統症狀"}</summary>
+              {respiratoryFindings.map((finding) => (
                 <VisitChoices key={finding} title={finding} prefix={finding + " · "} exclusive
                   options={en ? ["Reported", "Denied"] : ["有", "否認"]}
                   value={note.history} onChange={(value) => updateNote("history", value)} />
@@ -325,13 +359,19 @@ export function VisitFormCard({
               options={en ? ["Review pending results", "Arrange reassessment"] : ["覆核待查結果", "安排再次評估"]}
               value={note.followUp} onChange={(value) => updateNote("followUp", value)} />
             {field("followUp", en ? "Follow-up, pending results and when to seek help" : "覆診、待查結果及求醫指示")}
-            {withheld.length > 0 && <details className="rule-note"><summary>{en ? "Medicines excluded by chart rules" : "病歷規則已排除的藥物"}</summary>
-              {withheld.map((rule) => <p key={rule.id + rule.reason}><strong>{rule.name}</strong> · {rule.reason}</p>)}
-            </details>}
             <div className="section-heading">
-              
               <h2>{c.prescriptions}</h2>
             </div>
+            {withheld.length > 0 && (
+              <details className="rule-note" open>
+                <summary>{en ? "Medicines excluded by chart rules" : "病歷規則已排除的藥物"}</summary>
+                <ul>
+                  {withheld.map((rule) => (
+                    <li key={rule.id + rule.reason}><strong>{rule.name}</strong><p>{rule.reason}</p></li>
+                  ))}
+                </ul>
+              </details>
+            )}
             {!prescriptions.length && (
               <p className="empty-copy">{c.noPrescription}</p>
             )}
@@ -423,6 +463,22 @@ export function VisitFormCard({
           </section>
           {stage === 4 && <section className="form-section">
             <h2>{en ? "Review this visit" : "覆核本次診症"}</h2>
+            {reviewItems.length > 0 && (
+              <section className="visit-checklist" aria-label={en ? "Required to complete" : "完成診症所需資料"}>
+                <strong>{en ? "Required to complete" : "完成診症所需資料"}</strong>
+                <ul>
+                  {reviewItems.map((item) => (
+                    <li key={item.id}>
+                      <span>{item.label}</span>
+                      <button type="button" className="button secondary small"
+                        onClick={() => openStage(item.step, item.id)}>
+                        {en ? "Add" : "加入"} <span className="sr-only">{item.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
             <dl className="visit-summary">
               {[[c.complaint,note.complaint,0],[c.history,note.history,1],[c.examination,note.examination,1],
                 [c.vitals,Object.entries(vitalDefinitions).filter(([key]) => vitals[key]).map(([key,v]) => (en ? v.label : v.zh) + " " + vitals[key] + " " + v.unit).join(" · "),1],
