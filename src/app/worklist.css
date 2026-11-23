@@ -183,3 +183,6 @@
   .visit-action { display: none; }
   .clinic-masthead .finder-popup { position: fixed; top: 112px; left: 12px; right: 12px; width: auto; }
 }
+
+/* Pages with the large search (dashboard, consultations) don't repeat it in the top bar. */
+.clinic-app:has(.finder-page) .clinic-masthead .patient-finder { visibility: hidden; }

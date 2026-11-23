@@ -63,7 +63,7 @@ try {
     "Resume",
   ])
     assert.ok(dashboard.includes(label), label);
-  assert.ok(dashboard.includes('class="patient-table queue-table"'));
+  assert.ok(dashboard.includes('class="desk-queue queue-table"'));
   assert.ok(dashboard.includes("Today's visit status"));
   assert.ok((await page("/consultations?status=open")).includes("Resume"));
   assert.ok(

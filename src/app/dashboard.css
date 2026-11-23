@@ -1,0 +1,152 @@
+/* Dashboard: the doctor's start-of-day desk. A header band with today's
+   date and the patient search, a strip of figures, the queue of open
+   consultations (longest open first) and a side pane. Tokens come from
+   chrome.css. */
+
+.workspace:has(> .desk) { max-width: none; padding: 0 0 32px; }
+.workspace:has(> .desk) > .demo-guide { margin: 24px 32px 0; }
+.desk { color: var(--ink); font-size: 15px; }
+.desk data, .desk time { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.desk-head {
+  display: grid;
+  grid-template-columns: auto minmax(280px, 1fr) auto;
+  align-items: center;
+  gap: 16px 28px;
+  padding: 20px 32px;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.desk-head h1 { font: 600 24px/1.25 var(--sans); letter-spacing: -0.015em; }
+.desk-head p { margin-top: 2px; color: var(--text-muted); font-size: 13px; }
+.desk-head p time { font-size: 13px; }
+.desk-find { max-width: 640px; }
+.desk-head .button { min-height: 52px; padding: 0 20px; font-size: 15px; font-weight: 600; }
+
+/* figures */
+.desk-figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--paper);
+  border-bottom: 1px solid var(--line);
+}
+.desk-figures li + li { border-left: 1px solid var(--line); }
+.desk-figures a { display: grid; gap: 4px; min-height: 84px; padding: 14px 32px; color: var(--ink); }
+.desk-figures li + li a { padding-left: 24px; }
+.desk-figures a:active { background: var(--sunken); }
+.desk-figures span { color: var(--text-muted); font-size: 13px; }
+.desk-figures data { font-size: 28px; font-weight: 500; line-height: 1.1; }
+
+.desk-body { display: grid; grid-template-columns: minmax(0, 1fr) 360px; align-items: stretch; }
+.desk-main { min-width: 0; background: var(--paper); }
+.desk-side { border-left: 1px solid var(--line); background: var(--sunken); }
+.desk-section { padding: 20px 32px 24px; border-bottom: 1px solid var(--line); }
+.desk-side .desk-section { padding-inline: 24px; }
+.desk-section-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 12px; }
+.desk-section-head h2 { font: 600 16px/1.35 var(--sans); }
+.desk-section-head > span { color: var(--text-muted); font-size: 13px; }
+.desk-section-head > span data { font-size: 13px; }
+.desk-section-head > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin-left: auto;
+  color: var(--brand-dark);
+  font-size: 14px;
+  font-weight: 500;
+}
+.desk-empty { padding: 12px 0; color: var(--text-muted); font-size: 14px; }
+
+/* queue of open consultations */
+.desk-queue { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+.desk-queue li { border-bottom: 1px solid var(--line); }
+.desk-queue a {
+  display: grid;
+  grid-template-columns: 112px minmax(170px, 1.1fr) minmax(0, 1.3fr) auto;
+  align-items: center;
+  gap: 16px;
+  min-height: 72px;
+  padding: 10px 8px;
+  color: var(--ink);
+}
+.desk-queue a:active { background: var(--sunken); }
+.queue-wait { display: grid; }
+.queue-wait data { color: var(--warn); font-size: 16px; font-weight: 500; }
+.queue-wait small { color: var(--faint); font-size: 12px; }
+.queue-who { display: grid; min-width: 0; }
+.queue-who strong { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.queue-who small { color: var(--text-muted); font-size: 12px; }
+.queue-who small data { font-size: 12px; }
+.queue-reason { min-width: 0; overflow: hidden; color: var(--ink-2); font-size: 14px; white-space: nowrap; text-overflow: ellipsis; }
+.queue-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 10px 0 14px;
+  border-radius: 4px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* activity chart, restyled from the shared panel */
+.desk-activity-section .panel { border: 0; background: transparent; }
+.desk-activity-section .panel-heading { padding: 0 0 6px; }
+.desk-activity-section .panel-heading h2 { font: 600 16px/1.35 var(--sans); }
+.desk-activity-section .chart-box { padding: 0; }
+.desk-activity-section .chart-helper { margin-bottom: 8px; color: var(--text-muted); font-size: 13px; }
+
+/* today's status as one labelled bar */
+.status-bar { display: flex; gap: 2px; height: 12px; overflow: hidden; border-radius: 3px; background: var(--line); }
+.status-bar span { min-width: 4px; }
+[data-status="finished"] { --status: var(--ok); }
+[data-status="in-progress"] { --status: var(--warn); }
+[data-status="planned"] { --status: var(--brand); }
+[data-status="cancelled"] { --status: var(--faint); }
+.status-bar span { background: var(--status); }
+.status-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; margin: 14px 0 0; }
+.status-legend > div { display: flex; align-items: center; gap: 8px; }
+.status-legend > div::before { content: ""; flex: none; width: 10px; height: 10px; border-radius: 2px; background: var(--status); }
+.status-legend dt { flex: 1; color: var(--text-muted); font-size: 13px; }
+.status-legend dd { margin: 0; font: 500 15px/1 var(--mono); }
+
+/* recently completed */
+.desk-recent { margin: 0; padding: 0; list-style: none; }
+.desk-recent li + li { border-top: 1px solid var(--line); }
+.desk-recent a { display: grid; gap: 1px; min-height: 64px; padding: 10px 8px; border-radius: 4px; color: var(--ink); }
+.desk-recent a:active { background: var(--paper); }
+.desk-recent strong { font-size: 15px; font-weight: 600; }
+.desk-recent span { overflow: hidden; color: var(--ink-2); font-size: 13px; white-space: nowrap; text-overflow: ellipsis; }
+.desk-recent time { color: var(--text-muted); font-size: 12px; }
+
+/* ---------- tablet portrait and phones ---------- */
+@media (max-width: 1100px) {
+  .desk-head { grid-template-columns: 1fr auto; }
+  .desk-find { grid-column: 1 / -1; grid-row: 2; max-width: none; }
+}
+@media (max-width: 1024px) {
+  .desk-body { grid-template-columns: minmax(0, 1fr); }
+  .desk-side { display: grid; grid-template-columns: 1fr 1fr; border-left: 0; }
+  .desk-side .desk-section + .desk-section { border-left: 1px solid var(--line); }
+  .desk-queue a { grid-template-columns: 100px minmax(0, 1fr) auto; }
+  .queue-reason { display: none; }
+}
+@media (max-width: 640px) {
+  .desk-head { grid-template-columns: 1fr; padding: 16px; }
+  .desk-head .button { width: 100%; }
+  .desk-figures { grid-template-columns: 1fr 1fr; }
+  .desk-figures li:nth-child(3) { border-left: 0; }
+  .desk-figures li:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .desk-figures a, .desk-figures li + li a { padding: 12px 16px; min-height: 72px; }
+  .desk-section, .desk-side .desk-section { padding-inline: 16px; }
+  .desk-side { grid-template-columns: 1fr; }
+  .desk-side .desk-section + .desk-section { border-left: 0; }
+  .desk-queue a { grid-template-columns: 84px minmax(0, 1fr); gap: 4px 12px; padding-inline: 0; }
+  .queue-action { display: none; }
+}
