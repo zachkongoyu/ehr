@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, FileText, Clock3 } from "lucide-react";
 import { saveVisit } from "@/app/actions";
+import { VisitChoices } from "@/components/visit-choices";
 import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
 import { clinicCopy } from "@/lib/clinic-copy";
@@ -57,6 +58,13 @@ export function VisitFormCard({
   const previous = patient.visits.filter((item) => item.id !== visit.id);
   const [previousId, setPreviousId] = useState(previous[0]?.id ?? "");
   const selected = previous.find((item) => item.id === previousId);
+  const en = locale === "en";
+  const symptoms = en ? ["Cough", "Fever", "Sore throat", "Headache"] : ["咳嗽", "發燒", "喉嚨痛", "頭痛"];
+  const dxChoices = en ? ["Upper respiratory infection", "Allergic rhinitis", "Hypertension"] : ["上呼吸道感染", "過敏性鼻炎", "高血壓"];
+  function updateNote(field: keyof Note, value: string) {
+    setNote({ ...note, [field]: value });
+    changed();
+  }
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (!dirty) return;
@@ -171,6 +179,8 @@ export function VisitFormCard({
             <label className="sr-only" htmlFor="complaint">
               {c.complaint}
             </label>
+            <VisitChoices title={en ? "Presenting symptoms" : "就診症狀"} options={symptoms}
+              separator=" · " value={note.complaint} onChange={(value) => updateNote("complaint", value)} />
             <input
               id="complaint"
               maxLength={20000}
@@ -218,6 +228,17 @@ export function VisitFormCard({
               <span className="section-number">03</span>
               <h2>{c.consultation}</h2>
             </div>
+            {(en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"]).map((finding) => (
+              <VisitChoices key={finding} title={finding} prefix={finding + " · "} exclusive
+                options={en ? ["Reported", "Denied"] : ["有", "否認"]}
+                value={note.history} onChange={(value) => updateNote("history", value)} />
+            ))}
+            <VisitChoices title={en ? "Assessment" : "臨床評估"}
+              options={en ? ["Further assessment needed", "See documented diagnoses"] : ["需進一步評估", "見已記錄診斷"]}
+              value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
+            <VisitChoices title={en ? "Planned investigations" : "擬安排檢查"}
+              options={en ? ["Full blood count", "Chest X-ray", "Urinalysis"] : ["全血計數", "胸部 X 光", "尿液分析"]}
+              value={note.plan} onChange={(value) => updateNote("plan", value)} />
             <div className="notes-grid">
               {noteFields
                 .filter((field) => field !== "complaint")
@@ -248,6 +269,11 @@ export function VisitFormCard({
               <span className="section-number">04</span>
               <h2>{c.diagnoses}</h2>
             </div>
+            {(en ? ["Primary", "Secondary"] : ["主要", "次要"]).map((role) => (
+              <VisitChoices key={role} title={role + (en ? " diagnosis" : "診斷")}
+                prefix={role + " · "} exclusive={role === "Primary" || role === "主要"} options={dxChoices}
+                value={diagnoses} onChange={(value) => { setDiagnoses(value); changed(); }} />
+            ))}
             <label htmlFor="diagnoses" className="field-help">
               {c.diagnosisHelp}
             </label>
