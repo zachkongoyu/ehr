@@ -1,0 +1,10 @@
+.git/
+.next/
+node_modules/
+.scratch/
+.env
+.env.local
+.env*.local
+supabase/.temp/
+*.log
+*.tsbuildinfo
