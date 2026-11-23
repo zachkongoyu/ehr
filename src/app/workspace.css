@@ -232,3 +232,23 @@ body { font-family: "Noto Sans HK", Arial, sans-serif; }
 }
 .queue-table td small, .recent-visit div small { color: #394a60; opacity: 1; }
 .status-chart-box .chart-helper { font-size: 12px; }
+
+.visit-prompt, .visit-checklist {
+  margin: 16px 22px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--brand);
+  background: #edf4fb;
+}
+.visit-prompt, .visit-checklist li { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.visit-prompt p { color: var(--text-muted); }
+.visit-prompt .button, .visit-checklist .button { min-height: 44px; flex-shrink: 0; }
+.visit-checklist { margin-inline: 0; }
+.visit-checklist li { margin-top: 6px; }
+.visit-trends > summary { color: var(--brand-dark); min-height: 44px; }
+.visit-trends .panel-heading { flex-wrap: wrap; padding: 12px; }
+.visit-trends .chart-box { padding-inline: 12px; }
+.rule-note ul { padding: 0 0 12px; }
+.rule-note li + li { margin-top: 8px; }
+@media (max-width: 600px) {
+  .visit-prompt { margin-inline: 12px; flex-wrap: wrap; }
+}
