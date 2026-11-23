@@ -39,7 +39,7 @@ export function ClinicVolume({
             {
               id: "visits",
               name: en ? "Visits" : "就診",
-              color: "#3275f6",
+              color: "#075e80",
               values: months.map((row) => row.visits),
             },
           ]}

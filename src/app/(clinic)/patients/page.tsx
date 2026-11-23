@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search, ArrowUpRight, Plus, Users } from "lucide-react";
+import { ArrowUpRight, Plus, Users } from "lucide-react";
 import { ClinicShell } from "@/components/clinic-shell";
 import { listPatients, formatWhen } from "@/lib/chart";
 import { clinicCopy } from "@/lib/clinic-copy";
@@ -31,16 +31,6 @@ export default async function PatientsPage({
       </div>
       <section className="panel directory-panel">
         <div className="directory-toolbar">
-          <form className="search-form" action="/patients">
-            <Search size={18} />
-            <input
-              name="q"
-              defaultValue={query}
-              placeholder={c.search}
-              aria-label={c.search}
-            />
-            <button className="button secondary small">{c.searchAction}</button>
-          </form>
           <span className="muted">
             {patients.length} {c.patients}
           </span>

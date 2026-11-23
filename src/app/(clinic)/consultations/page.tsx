@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
 import { ClinicShell } from "@/components/clinic-shell";
-import { PatientFinder } from "@/components/patient-finder";
 import { getPool } from "@/lib/db";
 import { getLocale } from "@/lib/locale";
 import { displayName } from "@/lib/copy";
@@ -69,9 +68,6 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             {en ? "Start consultation" : "開始診症"}
           </Link>
         </header>
-        <div className="worklist-find">
-          <PatientFinder locale={locale} variant="page" />
-        </div>
 
         <nav className="worklist-status" aria-label={en ? "Visit status" : "就診狀態"}>
           {filters.map((item) => (
