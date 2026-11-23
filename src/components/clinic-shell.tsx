@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Search, Cross } from "lucide-react";
 import { ClinicNav } from "@/components/clinic-nav";
 import { DemoGuide } from "@/components/demo-guide";
+import { NavFeedback } from "@/components/nav-feedback";
 import { setLocale } from "@/app/actions";
 import type { Locale } from "@/lib/locale-shared";
 
@@ -15,6 +16,7 @@ export function ClinicShell({
 }) {
   return (
     <div className="clinic-app">
+      <NavFeedback renderedAt={Date.now()} />
       <a href="#main" className="skip-link">
         {locale === "en" ? "Skip to content" : "跳至內容"}
       </a>
