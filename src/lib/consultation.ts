@@ -7,6 +7,17 @@ export interface Connection {
   ): Promise<{ rows: Row[] }>;
 }
 
+export async function withheldMedicines(db: Connection, patientId: string) {
+  const result = await db.query<{ id: string; name: string; reason: string }>(
+    `select distinct m.id::text, m.name, rule.reason
+     from public.medication_withhold_rule rule
+     join public.medication m on m.id = rule.withhold_medication_id
+     join public.problem p on p.patient_id = $1 and p.clinical_status = 'active'
+       and p.hkctt_term_id = rule.when_hkctt_term_id
+     order by m.name, rule.reason`, [patientId]);
+  return result.rows;
+}
+
 export const noteFields = [
   "complaint",
   "history",
@@ -240,20 +251,15 @@ export async function writeConsultation(
       throw new ChartError("closed");
     if (visit.documentation_version !== input.version)
       throw new ChartError("conflict");
+    const withheld = input.prescriptions.length ? await withheldMedicines(db, input.patientId) : [];
     for (const prescription of input.prescriptions) {
       const medication = await db.query<{ id: string }>(
         "select id::text from public.medication where id = $1",
         [prescription.medicationId],
       );
       if (!medication.rows[0]) throw new ChartError("invalid");
-      const blocked = await db.query(
-        `select rule.id from public.medication_withhold_rule rule
-         join public.problem on problem.patient_id = $1 and problem.clinical_status = 'active'
-          and problem.hkctt_term_id = rule.when_hkctt_term_id
-         where rule.withhold_medication_id = $2`,
-        [input.patientId, prescription.medicationId],
-      );
-      if (blocked.rows.length) throw new ChartError("blocked");
+      if (withheld.some((item) => item.id === prescription.medicationId))
+        throw new ChartError("blocked");
     }
     await db.query(
       `insert into public.visit_note (visit_id, complaint, history, examination, assessment, plan, follow_up, author_name)

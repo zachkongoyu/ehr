@@ -8,7 +8,6 @@ import { VisitRecord } from "@/components/visit-record";
 import { MedicinePicker } from "@/components/medicine-picker";
 import { clinicCopy } from "@/lib/clinic-copy";
 import {
-  noteFields,
   vitalDefinitions,
   vitalKey,
   type Consultation,
@@ -23,10 +22,12 @@ export function VisitFormCard({
   patient,
   visit,
   medications,
+  withheld,
 }: {
   locale: Locale;
   patient: PatientChart;
   visit: VisitView;
+  withheld: { id: string; name: string; reason: string }[];
   medications: { id: string; name: string }[];
 }) {
   const c = clinicCopy(locale),
@@ -59,6 +60,25 @@ export function VisitFormCard({
   const [previousId, setPreviousId] = useState(previous[0]?.id ?? "");
   const selected = previous.find((item) => item.id === previousId);
   const en = locale === "en";
+  const [stage, setStage] = useState(0);
+  const indexRef = useRef<HTMLElement>(null);
+  function openStage(index: number) {
+    setStage(index);
+    requestAnimationFrame(() => {
+      indexRef.current?.querySelector<HTMLButtonElement>('[aria-current="step"]')?.focus({ preventScroll: true });
+      indexRef.current?.scrollIntoView({ block: "start" });
+    });
+  }
+  const stages = en ? ["Patient story", "Findings", "Working diagnosis", "Care plan", "Review"]
+    : ["就診原因", "臨床所見", "初步診斷", "診療計劃", "覆核"];
+  const available = medications.filter((medicine) => !withheld.some((rule) => rule.id === medicine.id));
+  const respiratory = note.complaint.split(" · ").some((item) => ["Cough", "Sore throat", "咳嗽", "喉嚨痛"].includes(item.trim()));
+  function field(key: keyof Note, label = c[key]) {
+    return <label className="reasoning-field" htmlFor={key}>{label}
+      <textarea id={key} rows={3} maxLength={20000} value={note[key]}
+        onChange={(event) => updateNote(key, event.target.value)} />
+    </label>;
+  }
   const symptoms = en ? ["Cough", "Fever", "Sore throat", "Headache"] : ["咳嗽", "發燒", "喉嚨痛", "頭痛"];
   const dxChoices = en ? ["Upper respiratory infection", "Allergic rhinitis", "Hypertension"] : ["上呼吸道感染", "過敏性鼻炎", "高血壓"];
   function updateNote(field: keyof Note, value: string) {
@@ -153,6 +173,15 @@ export function VisitFormCard({
         ref={formRef}
         id="consultation-form"
         className="consultation-document"
+        onInvalidCapture={(event) => {
+          const input = event.target as HTMLInputElement;
+          const section = input.closest("section");
+          if (section?.hidden) {
+            event.preventDefault();
+            setStage(section.id === "visit-vitals" ? 1 : 3);
+            requestAnimationFrame(() => { input.focus(); input.reportValidity(); });
+          }
+        }}
         onSubmit={(event) => {
           event.preventDefault();
           void save("draft");
@@ -169,15 +198,16 @@ export function VisitFormCard({
           </div>
           <span className="status-badge">{c.draft}</span>
         </div>
-        <nav className="visit-index" aria-label={en ? "Visit sections" : "診症部分"}>
-          {(["complaint", "vitals", "consultation", "diagnoses", "prescriptions"] as const).map((part) => (
-            <a href={"#visit-" + part} key={part}>{c[part]}</a>
+        <nav id="visit-workspace" tabIndex={-1} ref={indexRef} className="visit-index" aria-label={en ? "Visit sections" : "診症部分"}>
+          {stages.map((label, index) => (
+            <button type="button" key={label} aria-current={stage === index ? "step" : undefined}
+              onClick={() => openStage(index)}>{label}</button>
           ))}
         </nav>
         <fieldset disabled={pending} className="document-fields">
-          <section id="visit-complaint" className="form-section">
+          <section hidden={stage !== 0} id="visit-complaint" className="form-section">
             <div className="section-heading">
-              <span className="section-number">01</span>
+              
               <h2>{c.complaint}</h2>
               <span className="required-label">{c.required}</span>
             </div>
@@ -199,9 +229,9 @@ export function VisitFormCard({
               }}
             />
           </section>
-          <section id="visit-vitals" className="form-section">
+          <section hidden={stage !== 1} id="visit-vitals" className="form-section">
             <div className="section-heading">
-              <span className="section-number">02</span>
+              
               <h2>{c.vitals}</h2>
               <span className="muted">{c.optional}</span>
             </div>
@@ -228,56 +258,41 @@ export function VisitFormCard({
               ))}
             </div>
           </section>
-          <section id="visit-consultation" className="form-section">
-            <div className="section-heading">
-              <span className="section-number">03</span>
-              <h2>{c.consultation}</h2>
-            </div>
-            {(en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"]).map((finding) => (
-              <VisitChoices key={finding} title={finding} prefix={finding + " · "} exclusive
-                options={en ? ["Reported", "Denied"] : ["有", "否認"]}
-                value={note.history} onChange={(value) => updateNote("history", value)} />
-            ))}
-            <VisitChoices title={en ? "Assessment" : "臨床評估"}
-              options={en ? ["Further assessment needed", "See documented diagnoses"] : ["需進一步評估", "見已記錄診斷"]}
-              value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
-            <VisitChoices title={en ? "Planned investigations" : "擬安排檢查"}
-              options={en ? ["Full blood count", "Chest X-ray", "Urinalysis"] : ["全血計數", "胸部 X 光", "尿液分析"]}
-              value={note.plan} onChange={(value) => updateNote("plan", value)} />
-            <div className="notes-grid">
-              {noteFields
-                .filter((field) => field !== "complaint")
-                .map((field) => (
-                  <label key={field} htmlFor={field}>
-                    <span>
-                      {c[field]}
-                      {(field === "assessment" || field === "plan") && (
-                        <small className="required-label">{c.required}</small>
-                      )}
-                    </span>
-                    <textarea
-                      id={field}
-                      rows={field === "history" ? 5 : 4}
-                      maxLength={20000}
-                      value={note[field]}
-                      onChange={(event) => {
-                        setNote({ ...note, [field]: event.target.value });
-                        changed();
-                      }}
-                    />
-                  </label>
-                ))}
-            </div>
+          <section hidden={stage !== 1} className="form-section">
+            <h2>{en ? "Focused history and examination" : "重點病史及檢查"}</h2>
+            <details key={String(respiratory)} open={respiratory || undefined}>
+              <summary>{en ? "Respiratory symptoms" : "呼吸系統症狀"}</summary>
+              {(en ? ["Breathlessness", "Chest pain"] : ["呼吸困難", "胸痛"]).map((finding) => (
+                <VisitChoices key={finding} title={finding} prefix={finding + " · "} exclusive
+                  options={en ? ["Reported", "Denied"] : ["有", "否認"]}
+                  value={note.history} onChange={(value) => updateNote("history", value)} />
+              ))}
+            </details>
+            <VisitChoices title={en ? "Symptom course" : "症狀變化"} prefix={en ? "Course · " : "病程 · "} exclusive
+              options={en ? ["Improving", "Unchanged", "Worsening"] : ["好轉", "無變化", "惡化"]}
+              value={note.history} onChange={(value) => updateNote("history", value)} />
+            {field("history")}{field("examination")}
           </section>
-          <section id="visit-diagnoses" className="form-section">
-            <div className="section-heading">
-              <span className="section-number">04</span>
-              <h2>{c.diagnoses}</h2>
-            </div>
+          <section hidden={stage !== 2} id="visit-diagnoses" className="form-section">
+            <h2>{stages[2]}</h2>
+            <VisitChoices title={en ? "Diagnostic uncertainty" : "診斷不確定性"}
+              options={en ? ["Cause remains uncertain"] : ["病因尚未確定"]}
+              value={note.assessment} onChange={(value) => updateNote("assessment", value)} />
+            {field("assessment", en ? "Working explanation and alternatives considered" : "初步判斷及鑑別診斷")}
             {(en ? ["Primary", "Secondary"] : ["主要", "次要"]).map((role) => (
               <VisitChoices key={role} title={role + (en ? " diagnosis" : "診斷")}
                 prefix={role + " · "} exclusive={role === "Primary" || role === "主要"} options={dxChoices}
-                value={diagnoses} onChange={(value) => { setDiagnoses(value); changed(); }} />
+                value={diagnoses} onChange={(value) => {
+                  const lines = value.split("\n");
+                  const added = lines.find((line) => !diagnoses.split("\n").includes(line));
+                  if (added?.startsWith(role + " · ")) {
+                    const name = added.slice(role.length + 3);
+                    const otherRoles = ["Primary", "Secondary", "主要", "次要"].filter((other) => other !== role);
+                    setDiagnoses(lines.filter((line) => line.trim() !== name &&
+                      !otherRoles.some((other) => line.trim() === other + " · " + name)).join("\n"));
+                  } else setDiagnoses(value);
+                  changed();
+                }} />
             ))}
             <label htmlFor="diagnoses" className="field-help">
               {c.diagnosisHelp}
@@ -293,9 +308,21 @@ export function VisitFormCard({
               }}
             />
           </section>
-          <section id="visit-prescriptions" className="form-section">
+          <section hidden={stage !== 3} id="visit-prescriptions" className="form-section">
+            <h2>{stages[3]}</h2>
+            <VisitChoices title={en ? "Planned investigations" : "擬安排檢查"}
+              options={en ? ["Full blood count", "Chest X-ray", "Urinalysis"] : ["全血計數", "胸部 X 光", "尿液分析"]}
+              value={note.plan} onChange={(value) => updateNote("plan", value)} />
+            {field("plan")}
+            <VisitChoices title={en ? "Follow-up plan" : "跟進安排"}
+              options={en ? ["Review pending results", "Arrange reassessment"] : ["覆核待查結果", "安排再次評估"]}
+              value={note.followUp} onChange={(value) => updateNote("followUp", value)} />
+            {field("followUp", en ? "Follow-up, pending results and when to seek help" : "覆診、待查結果及求醫指示")}
+            {withheld.length > 0 && <details className="rule-note"><summary>{en ? "Medicines excluded by chart rules" : "病歷規則已排除的藥物"}</summary>
+              {withheld.map((rule) => <p key={rule.id + rule.reason}><strong>{rule.name}</strong> · {rule.reason}</p>)}
+            </details>}
             <div className="section-heading">
-              <span className="section-number">05</span>
+              
               <h2>{c.prescriptions}</h2>
             </div>
             {!prescriptions.length && (
@@ -310,7 +337,7 @@ export function VisitFormCard({
                       <MedicinePicker
                         id={"medicine-" + index}
                         value={item.medicationId}
-                        medicines={medications}
+                        medicines={available}
                         locale={locale}
                         onChange={(medicationId) => {
                           setPrescriptions(
@@ -322,6 +349,7 @@ export function VisitFormCard({
                         }}
                       />
                     </label>
+                    {withheld.some((rule) => rule.id === item.medicationId) && <span role="alert">{withheld.find((rule) => rule.id === item.medicationId)?.name} · {c.blocked}</span>}
                     <button
                       type="button"
                       className="icon-button danger"
@@ -368,7 +396,7 @@ export function VisitFormCard({
                 </div>
               ))}
             </div>
-            {medications.length ? (
+            {available.length ? (
               <button
                 type="button"
                 className="button secondary small"
@@ -387,6 +415,18 @@ export function VisitFormCard({
               <p className="field-help">{c.noMedicine}</p>
             )}
           </section>
+          {stage === 4 && <section className="form-section">
+            <h2>{en ? "Review this visit" : "覆核本次診症"}</h2>
+            <dl className="visit-summary">
+              {[[c.complaint,note.complaint,0],[c.history,note.history,1],[c.examination,note.examination,1],
+                [c.vitals,Object.entries(vitalDefinitions).filter(([key]) => vitals[key]).map(([key,v]) => (en ? v.label : v.zh) + " " + vitals[key] + " " + v.unit).join(" · "),1],
+                [c.assessment,note.assessment,2],[c.diagnoses,diagnoses,2],[c.plan,note.plan,3],
+                [c.prescriptions,prescriptions.map((rx) => [medications.find((m) => m.id === rx.medicationId)?.name,rx.dose,rx.route,rx.frequency].filter(Boolean).join(" · ")).join("\n"),3],
+                [c.followUp,note.followUp,3]].map(([label,value,index]) => <div key={label}>
+                  <dt><button type="button" onClick={() => openStage(Number(index))}>{label}</button></dt>
+                  <dd>{value || (en ? "Unrecorded" : "未記錄")}</dd></div>)}
+            </dl>
+          </section>}
         </fieldset>
         <datalist id="route-suggestions">
           {[
@@ -462,10 +502,10 @@ export function VisitFormCard({
               type="button"
               className="button primary"
               disabled={pending}
-              onClick={() => void save("complete")}
+              onClick={() => stage < 4 ? openStage(stage + 1) : void save("complete")}
             >
               <Check size={16} />
-              {c.complete}
+              {stage < 4 ? stages[stage + 1] + " →" : c.complete}
             </button>
           </div>
         </div>
