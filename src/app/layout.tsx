@@ -11,6 +11,7 @@ import { getLocale } from "@/lib/locale";
 import "./globals.css";
 import "./workspace.css";
 import "./consult.css";
+import "./chart-page.css";
 import "./chrome.css";
 
 export const dynamic = "force-dynamic";

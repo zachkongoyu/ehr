@@ -1,0 +1,342 @@
+/* Patient chart in the editorial direction. Shares tokens with the
+   consultation (warm paper, black ink, serif display) and keeps every
+   control at least 44px for tablet use. */
+
+.chart-page {
+  --p-ink: #1b1a17;
+  --p-muted: #6a655c;
+  --p-faint: #8f897e;
+  --p-line: #e3ded3;
+  --p-line-strong: #cfc8ba;
+  --p-surface: #fffdf9;
+  --p-wash: #f8f6f0;
+  --p-attn: #8a5a14;
+  --p-done: #3d6b4f;
+  --p-alert: #8c2f2b;
+  --p-alert-tint: #f6e9e6;
+  --p-serif: "Source Serif 4", "Noto Serif HK", Georgia, serif;
+  max-width: 1400px;
+  margin: 0 auto;
+  color: var(--p-ink);
+  font-size: 16px;
+  line-height: 1.55;
+}
+.chart-page svg { stroke-width: 1.6; }
+.workspace:has(> .chart-page) { padding-top: 24px; }
+
+/* ---------- header ---------- */
+.chart-crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--p-muted);
+  font-size: 15px;
+}
+.chart-head-main {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 8px;
+}
+.chart-who h1 {
+  font: 400 clamp(36px, 4vw, 48px)/1.1 var(--p-serif);
+  letter-spacing: -0.02em;
+}
+.chart-who p { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; color: var(--p-muted); font-size: 16px; }
+.chart-who p span + span::before { content: "·"; margin-right: 8px; color: var(--p-faint); }
+.chart-actions { display: flex; gap: 10px; flex: none; }
+.chart-actions .button {
+  min-height: 52px;
+  padding: 0 22px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.chart-alerts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.chart-alerts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--p-line);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+.chart-alerts .alert-allergy { border-color: #e2c3bd; background: var(--p-alert-tint); color: var(--p-alert); font-weight: 600; }
+.chart-alerts .alert-quiet { border-color: transparent; padding-inline: 0 6px; color: var(--p-muted); font-weight: 400; }
+.chart-sections {
+  display: flex;
+  gap: 4px;
+  margin-top: 28px;
+  border-bottom: 1px solid var(--p-line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.chart-sections a {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 0 16px;
+  color: var(--p-muted);
+  font-size: 16px;
+  font-weight: 500;
+}
+.chart-sections a[aria-current="page"] { color: var(--p-ink); font-weight: 600; box-shadow: inset 0 -2px var(--p-ink); }
+
+/* ---------- body ---------- */
+.chart-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 32px;
+  align-items: start;
+  margin-top: 28px;
+}
+.chart-main { display: grid; gap: 20px; min-width: 0; }
+.chart-card {
+  padding: 24px 28px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+.card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.card-head h2 { font: 500 22px/1.3 var(--p-serif); }
+.card-meta { color: var(--p-faint); font-size: 14px; }
+.card-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  color: var(--p-faint);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.status-word { font-style: normal; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; font-size: 12px; }
+.status-word.in-progress { color: var(--p-attn); }
+.status-word.finished { color: var(--p-done); }
+.status-word.cancelled { color: var(--p-faint); }
+.card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  color: var(--p-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--p-line-strong);
+  text-underline-offset: 4px;
+}
+.chart-page .note-text { white-space: pre-line; overflow-wrap: anywhere; max-width: 68ch; font-size: 16px; color: var(--p-ink); }
+.chart-page h3 {
+  margin-bottom: 6px;
+  color: var(--p-faint);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.chart-page .empty-copy { padding: 0; color: var(--p-muted); font-size: 15px; }
+
+/* latest consultation */
+.chart-latest h2 { margin: 10px 0 20px; font: 400 32px/1.2 var(--p-serif); letter-spacing: -0.01em; }
+.latest-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px 32px; }
+.chart-latest .card-link { margin-top: 16px; }
+
+/* figures */
+.chart-figures {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  border-block: 1px solid var(--p-line);
+}
+.chart-figures > div { padding: 18px 20px; }
+.chart-figures > div + div { border-left: 1px solid var(--p-line); }
+.chart-figures dt { color: var(--p-muted); font-size: 14px; }
+.chart-figures dd { margin: 6px 0 0; font: 400 34px/1.1 var(--p-serif); font-variant-numeric: lining-nums tabular-nums; }
+.chart-figures .figure-date { font-size: 18px; line-height: 1.35; }
+
+/* vitals */
+.chart-readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 18px 24px; margin: 0; }
+.chart-readings dt { color: var(--p-muted); font-size: 14px; }
+.chart-readings dd { margin: 4px 0 0; font: 400 30px/1.1 var(--p-serif); font-variant-numeric: lining-nums tabular-nums; }
+.chart-readings small { color: var(--p-muted); font: 400 14px/1 "Noto Sans HK", sans-serif; }
+
+/* allergies, problems and medicines from the shared context component */
+.chart-context .context-stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.chart-page .panel { border: 1px solid var(--p-line); border-radius: 10px; background: var(--p-surface); box-shadow: none; }
+.chart-page .allergy-panel { box-shadow: inset 3px 0 var(--p-alert); }
+.chart-page .panel-heading { padding: 20px 24px 8px; border: 0; background: transparent; }
+.chart-page .panel-heading h2 { display: flex; align-items: center; gap: 8px; font: 500 20px/1.3 var(--p-serif); }
+.chart-page .panel-heading svg { color: var(--p-muted); }
+.chart-page .allergy-panel .panel-heading svg { color: var(--p-alert); }
+.chart-page .count { padding: 0; background: none; color: var(--p-faint); font-size: 14px; font-weight: 500; }
+.chart-page .clinical-list { padding: 0 24px 8px; }
+.chart-page .clinical-list li { padding: 12px 0; border-color: var(--p-line); }
+.chart-page .clinical-list strong { display: block; font-size: 16px; font-weight: 600; }
+.chart-page .clinical-list span, .chart-page .clinical-list small { color: var(--p-muted); font-size: 14px; }
+.chart-page .panel > .empty-copy { padding: 0 24px 18px; }
+.chart-page .inline-entry { border-top: 1px solid var(--p-line); }
+.chart-page .inline-entry summary {
+  min-height: 52px;
+  padding: 0 24px;
+  color: var(--p-ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+.chart-page .inline-entry form { padding: 0 24px 20px; gap: 14px; }
+.chart-page .inline-entry label { color: var(--p-ink); font-size: 15px; font-weight: 600; }
+.chart-page .inline-entry input {
+  min-height: 52px;
+  margin-top: 6px;
+  padding: 0 14px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 8px;
+  background: var(--p-surface);
+  font-size: 16px;
+}
+.chart-page .inline-entry .button { min-height: 48px; padding: 0 20px; font-size: 15px; }
+
+/* trend */
+.chart-trend .panel-heading { align-items: center; }
+.chart-page .trend-select {
+  min-height: 44px;
+  padding: 0 36px 0 14px;
+  border: 1px solid var(--p-line-strong);
+  border-radius: 8px;
+  background-color: var(--p-surface);
+  font-size: 15px;
+}
+.chart-page .chart-box { padding: 0 24px 20px; }
+.chart-page .chart-helper { color: var(--p-muted); font-size: 14px; }
+
+/* full record */
+.record-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--p-line); }
+.record-head h2 { margin-top: 8px; font: 400 32px/1.2 var(--p-serif); letter-spacing: -0.01em; }
+.record-head .button { min-height: 52px; padding: 0 22px; font-size: 16px; font-weight: 600; flex: none; }
+.chart-record .visit-record { display: grid; gap: 22px; padding-top: 22px; }
+.chart-record .visit-record > section > h3 { margin-bottom: 8px; }
+.chart-record .visit-record ul:not(.clinical-list) { margin: 0; padding-left: 20px; }
+.chart-record .vital-readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 24px; }
+.chart-record .vital-readings span { display: block; color: var(--p-muted); font-size: 14px; }
+.chart-record .vital-readings strong { font: 400 26px/1.2 var(--p-serif); }
+.chart-record .vital-readings small { color: var(--p-muted); font: 400 14px/1 "Noto Sans HK", sans-serif; }
+.chart-record .clinical-list { padding: 0; }
+.chart-record .legacy-answers > div { display: grid; grid-template-columns: minmax(140px, 40%) 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--p-line); }
+.chart-record .legacy-answers dt { color: var(--p-muted); }
+.chart-record .legacy-answers dd { margin: 0; }
+
+/* medications table */
+.chart-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.chart-table th {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--p-line-strong);
+  color: var(--p-faint);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-align: start;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.chart-table td { padding: 14px 12px; border-bottom: 1px solid var(--p-line); vertical-align: top; }
+.chart-table td strong { font-weight: 600; }
+
+/* plans */
+.plan-list { display: grid; }
+.plan-entry { padding: 20px 0; }
+.plan-entry + .plan-entry { border-top: 1px solid var(--p-line); }
+.plan-entry:first-child { padding-top: 4px; }
+.plan-title { display: inline-flex; align-items: center; min-height: 44px; margin: 2px 0 10px; font: 500 22px/1.3 var(--p-serif); }
+
+/* profile */
+.chart-profile { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0 32px; margin: 0; }
+.chart-profile > div { padding: 14px 0; border-bottom: 1px solid var(--p-line); }
+.chart-profile dt { color: var(--p-faint); font-size: 13px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+.chart-profile dd { margin: 4px 0 0; font-size: 17px; overflow-wrap: anywhere; }
+
+/* ---------- timeline ---------- */
+.chart-timeline {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  padding: 24px 20px 12px 24px;
+  border: 1px solid var(--p-line);
+  border-radius: 10px;
+  background: var(--p-surface);
+}
+.chart-timeline ol { position: relative; margin: 0; padding: 0; list-style: none; }
+.chart-timeline ol::before { content: ""; position: absolute; top: 14px; bottom: 14px; left: 5px; width: 1px; background: var(--p-line-strong); }
+.chart-timeline li { position: relative; padding-left: 26px; }
+.chart-timeline li::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--p-faint);
+  border-radius: 50%;
+  background: var(--p-surface);
+}
+.chart-timeline li[data-status="finished"]::before { border-color: var(--p-done); background: var(--p-done); }
+.chart-timeline li[data-status="in-progress"]::before { border-color: var(--p-attn); background: #f6efe1; }
+.chart-timeline a {
+  display: grid;
+  gap: 2px;
+  min-height: 64px;
+  margin: 2px 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--p-ink);
+}
+.chart-timeline a:active { background: var(--p-wash); }
+.chart-timeline a[aria-current="true"] { background: #ece8df; box-shadow: inset 3px 0 var(--p-ink); }
+.chart-timeline time { color: var(--p-faint); font-size: 13px; }
+.chart-timeline strong { font-size: 16px; font-weight: 600; line-height: 1.35; }
+.chart-timeline a > span { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; color: var(--p-muted); font-size: 14px; }
+
+/* ---------- tablet portrait and phones ---------- */
+@media (max-width: 1024px) {
+  .chart-body { grid-template-columns: minmax(0, 1fr); }
+  .chart-timeline { position: static; max-height: none; order: -1; }
+  .chart-timeline ol { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .chart-timeline ol::before { top: 21px; bottom: auto; left: 0; right: 0; width: auto; height: 1px; }
+  .chart-timeline li { flex: none; width: 230px; padding: 30px 0 0; }
+  .chart-timeline li::before { top: 16px; left: 12px; }
+}
+@media (max-width: 700px) {
+  .workspace:has(> .chart-page) { padding: 12px 16px 40px; }
+  .chart-head-main { flex-direction: column; align-items: stretch; }
+  .chart-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .chart-actions form, .chart-actions .button { width: 100%; }
+  .chart-figures { grid-template-columns: 1fr 1fr; }
+  .chart-figures > div:nth-child(3) { border-left: 0; }
+  .chart-figures > div:nth-child(n + 3) { border-top: 1px solid var(--p-line); }
+  .chart-card { padding: 20px; }
+  .chart-latest h2, .record-head h2 { font-size: 26px; }
+  .record-head { flex-direction: column; }
+}
+
+/* fixes from screenshot review */
+.chart-figures .figure-date, .card-meta, .card-eyebrow span { word-break: keep-all; }
+.card-head { flex-wrap: wrap; }
+.card-head h2 { word-break: keep-all; }
+.chart-record .vital-readings > div { padding: 0; border: 0; border-radius: 0; background: none; }
+.chart-trend svg { overflow: visible; }
+@media (max-width: 700px) {
+  .chart-readings, .chart-record .vital-readings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.chart-table td:nth-child(2), .chart-table td:nth-child(3), .chart-table td:nth-child(4) { white-space: nowrap; }
+.chart-table .card-link { word-break: keep-all; min-height: 0; }

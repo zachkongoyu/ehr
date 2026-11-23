@@ -15,6 +15,7 @@ import { MedicinePicker } from "@/components/medicine-picker";
 import { consultationAreas } from "@/lib/consultation-areas";
 import { clinicCopy } from "@/lib/clinic-copy";
 import { t } from "@/lib/copy";
+import { ageFrom } from "@/lib/age";
 import {
   vitalDefinitions,
   vitalKey,
@@ -57,16 +58,6 @@ const palpitationPrefixes = {
 
 function hasLine(text: string, test: (line: string) => boolean) {
   return text.split("\n").some((line) => test(line.trim()));
-}
-
-function ageFrom(birthDate: string) {
-  const born = new Date(birthDate + "T00:00:00");
-  if (Number.isNaN(born.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - born.getFullYear();
-  if (now.getMonth() < born.getMonth() ||
-    (now.getMonth() === born.getMonth() && now.getDate() < born.getDate())) age--;
-  return age;
 }
 
 export function VisitFormCard({
