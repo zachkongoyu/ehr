@@ -10,7 +10,7 @@ import { formatWhen } from "@/lib/chart";
 
 export const dynamic = "force-dynamic";
 
-type Search = { status?: string; q?: string; no?: string; surname?: string; reason?: string };
+type Search = { status?: string; q?: string; no?: string; surname?: string; reason?: string; initial?: string };
 
 export default async function ConsultationsPage({ searchParams }: { searchParams: Promise<Search> }) {
   const locale = await getLocale(),
@@ -28,6 +28,8 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
   const digits = text(search.no, 8).replace(/\D/g, "");
   const surname = text(search.surname, 100);
   const reason = text(search.reason);
+  // English only: the first letter of the family name, like a contacts index.
+  const initial = en && /^[A-Z]$/.test(text(search.initial, 1).toUpperCase()) ? text(search.initial, 1).toUpperCase() : "";
 
   const statusWhere = `($1='all' or ($1='today' and (v.started_at at time zone 'Asia/Hong_Kong')::date=(now() at time zone 'Asia/Hong_Kong')::date)
     or ($1='open' and v.status='in-progress') or ($1='completed' and v.status='finished'))`;
@@ -36,14 +38,16 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
   // name in English.
   const surnameKey = en ? "p.family_name"
     : `(case when left(regexp_replace(p.name_text,'^示例\\s*·\\s*',''),1) ~ '^[\u4e00-\u9fff\u3400-\u4dbf]$' then left(regexp_replace(p.name_text,'^示例\\s*·\\s*',''),1) else p.family_name end)`;
-  // Filters other than status. Each facet list ignores its own selection,
-  // so every surname or reason shown leads to at least one visit.
-  const otherFilters = (skip?: "surname" | "reason") => `($2='' or concat_ws(' ',p.name_text,p.family_name,p.given_name,p.chart_number,n.complaint,v.provider_name) ilike $3)
+  // Filters other than status. Each list of options skips its own
+  // selection (the letter index also skips the surname it narrows to), so
+  // every option shown leads to at least one visit.
+  const otherFilters = (...skip: ("surname" | "reason" | "initial")[]) => `($2='' or concat_ws(' ',p.name_text,p.family_name,p.given_name,p.chart_number,n.complaint,v.provider_name) ilike $3)
        and ($4='' or regexp_replace(p.chart_number,'\\D','','g') like '%'||$4||'%')
-       ${skip === "surname" ? "and $5=$5" : `and ($5='' or ${surnameKey}=$5)`}
-       ${skip === "reason" ? "and $6=$6" : "and ($6='' or $6=any(string_to_array(coalesce(n.complaint,''),' · ')))"}`;
+       ${skip.includes("surname") ? "and $5=$5" : `and ($5='' or ${surnameKey}=$5)`}
+       ${skip.includes("reason") ? "and $6=$6" : "and ($6='' or $6=any(string_to_array(coalesce(n.complaint,''),' · ')))"}
+       ${skip.includes("initial") ? "and $7=$7" : "and ($7='' or upper(left(p.family_name,1))=$7)"}`;
   const db = getPool();
-  const [visits, counts, surnames, reasons] = await Promise.all([
+  const [visits, counts, surnames, reasons, initials] = await Promise.all([
     db.query<{
       id: string; patient_id: string; chart_number: string; name_text: string; family_name: string;
       given_name: string; started_at: string; status: string; complaint: string | null; provider_name: string | null;
@@ -52,7 +56,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
        from public.visit v join public.patient p on p.id=v.patient_id left join public.visit_note n on n.visit_id=v.id
        where ${statusWhere} and ${otherFilters()}
        order by v.started_at desc,v.id desc limit 100`,
-      [filter, query, "%" + query + "%", digits, surname, reason],
+      [filter, query, "%" + query + "%", digits, surname, reason, initial],
     ),
     db.query<{ today: string; open: string; completed: string; all: string }>(
       `select count(*) filter (where (v.started_at at time zone 'Asia/Hong_Kong')::date=(now() at time zone 'Asia/Hong_Kong')::date)::text as today,
@@ -66,7 +70,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
        from public.visit v join public.patient p on p.id=v.patient_id left join public.visit_note n on n.visit_id=v.id
        where ${statusWhere} and p.family_name<>'' and ${otherFilters("surname")}
        group by 1 order by count(*) desc, 1 limit 24`,
-      [filter, query, "%" + query + "%", digits, surname, reason],
+      [filter, query, "%" + query + "%", digits, surname, reason, initial],
     ),
     db.query<{ reason: string; visits: string }>(
       `select trim(token) as reason, count(*)::text as visits
@@ -74,7 +78,13 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             unnest(string_to_array(coalesce(n.complaint,''),' · ')) as token
        where ${statusWhere} and trim(token)<>'' and ${otherFilters("reason")}
        group by trim(token) order by count(*) desc, trim(token) limit 10`,
-      [filter, query, "%" + query + "%", digits, surname, reason],
+      [filter, query, "%" + query + "%", digits, surname, reason, initial],
+    ),
+    db.query<{ initial: string }>(
+      `select distinct upper(left(p.family_name,1)) as initial
+       from public.visit v join public.patient p on p.id=v.patient_id left join public.visit_note n on n.visit_id=v.id
+       where ${statusWhere} and p.family_name<>'' and ${otherFilters("initial", "surname")}`,
+      [filter, query, "%" + query + "%", digits, surname, reason, initial],
     ),
   ]);
   const examples = await db.query<{ patient_id: string; visit_id: string; chart_number: string }>(
@@ -84,7 +94,8 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
      order by p.chart_number`,
   );
 
-  const current: Search = { status: filter, q: query, no: digits, surname, reason };
+  const current: Search = { status: filter, q: query, no: digits, surname, reason, initial };
+  const letters = new Set(initials.rows.map((row) => row.initial));
   const href = (change: Partial<Search>) => {
     const next = { ...current, ...change };
     const params = new URLSearchParams();
@@ -95,6 +106,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
   const active = [
     digits && { key: "no", label: (en ? "Chart no. contains " : "病歷編號含 ") + digits },
     surname && { key: "surname", label: (en ? "Surname " : "姓氏 ") + surname },
+    initial && !surname && { key: "initial", label: (en ? "Surname starts with " : "") + initial },
     reason && { key: "reason", label: reason },
     query && { key: "q", label: "“" + query + "”" },
   ].filter(Boolean) as { key: keyof Search; label: string }[];
@@ -118,7 +130,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
 
         <nav className="worklist-status" aria-label={en ? "Visit status" : "就診狀態"}>
           {filters.map((item) => (
-            <Link key={item.id} href={href({ status: item.id, surname: "", reason: "" })} scroll={false}
+            <Link key={item.id} href={href({ status: item.id, surname: "", reason: "", initial: "" })} scroll={false}
               aria-current={item.id === filter ? "page" : undefined}>
               <span>{item.name}</span>
               <data>{count[item.id as keyof typeof count]}</data>
@@ -137,6 +149,16 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
             {surnames.rows.length > 0 && (
               <section>
                 <h2>{en ? "Surname" : "姓氏"}</h2>
+                {en && (
+                  <div className="initial-index" role="group" aria-label="First letter of surname">
+                    {"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map((letter) => letters.has(letter) || initial === letter ? (
+                      <Link key={letter} scroll={false} aria-current={initial === letter ? "true" : undefined}
+                        href={href({ initial: initial === letter ? "" : letter, surname: "" })}>{letter}</Link>
+                    ) : (
+                      <span key={letter} aria-disabled="true">{letter}</span>
+                    ))}
+                  </div>
+                )}
                 <div className="surname-grid">
                   {surnames.rows.map((row) => {
                     const selected = surname === row.surname;
@@ -193,7 +215,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
                       </Link>
                     </li>
                   ))}
-                  <li><Link className="clear-all" scroll={false} href={href({ q: "", no: "", surname: "", reason: "" })}>
+                  <li><Link className="clear-all" scroll={false} href={href({ q: "", no: "", surname: "", reason: "", initial: "" })}>
                     {en ? "Clear all" : "全部清除"}</Link></li>
                 </ul>
               )}
@@ -218,7 +240,7 @@ export default async function ConsultationsPage({ searchParams }: { searchParams
                     <Link href={open ? `/patients/${row.patient_id}/visits/${row.id}` : `/patients/${row.patient_id}?visit=${row.id}`}>
                       <time dateTime={row.started_at}>{formatWhen(row.started_at, locale)}</time>
                       <span className="visit-who">
-                        <strong>{displayName(locale, row)}</strong>
+                        <strong>{en ? `${row.family_name.toUpperCase()}, ${row.given_name}` : displayName(locale, row)}</strong>
                         <data>{row.chart_number}</data>
                       </span>
                       <span className="visit-reason">{row.complaint || "—"}</span>
